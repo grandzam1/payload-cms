@@ -2,6 +2,7 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { s3Storage } from '@payloadcms/storage-s3'
+import { cloudinaryStorage } from 'payload-cloudinary'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
@@ -16,12 +17,25 @@ const dirname = path.dirname(filename)
 const databaseUrl = process.env.DATABASE_URL || ''
 const usePostgres = databaseUrl.startsWith('postgres')
 
+const cloudinaryConfigured = Boolean(
+  process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET,
+)
+
 const s3Configured = Boolean(
-  process.env.S3_BUCKET &&
+  !cloudinaryConfigured &&
+    process.env.S3_BUCKET &&
     process.env.S3_ACCESS_KEY_ID &&
     process.env.S3_SECRET_ACCESS_KEY &&
     process.env.S3_ENDPOINT,
 )
+
+const s3PublicBase =
+  process.env.S3_PUBLIC_URL ||
+  (process.env.S3_BUCKET
+    ? `https://crjnpllyjxujnxdxkjfo.supabase.co/storage/v1/object/public/${process.env.S3_BUCKET}`
+    : '')
 
 export default buildConfig({
   admin: {
@@ -72,12 +86,28 @@ export default buildConfig({
       }),
   sharp,
   plugins: [
+    cloudinaryStorage({
+      enabled: cloudinaryConfigured,
+      config: {
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME || '',
+        api_key: process.env.CLOUDINARY_API_KEY || '',
+        api_secret: process.env.CLOUDINARY_API_SECRET || '',
+      },
+      collections: {
+        media: true,
+      },
+      folder: process.env.CLOUDINARY_FOLDER || 'payload-media',
+    }),
     s3Storage({
       enabled: s3Configured,
       collections: {
         media: {
           // Public bucket URLs — skip Payload file proxy for faster delivery
           disablePayloadAccessControl: true,
+          generateFileURL: ({ filename, prefix }) => {
+            const key = [prefix, filename].filter(Boolean).join('/')
+            return `${s3PublicBase}/${key}`
+          },
         },
       },
       bucket: process.env.S3_BUCKET || '',
