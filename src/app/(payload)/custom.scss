@@ -1,0 +1,93 @@
+/* Beginner-friendly + mobile-first Admin Panel polish */
+
+:root {
+  --beginner-touch-min: 44px;
+}
+
+/* Comfortable reading size on phones */
+@media (max-width: 768px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Larger tap targets for primary actions */
+  .btn,
+  .btn--style-primary,
+  .btn--style-secondary,
+  button.btn {
+    min-height: var(--beginner-touch-min);
+  }
+
+  /* Form fields: easier to tap and read */
+  .field-type.text input,
+  .field-type.email input,
+  .field-type.password input,
+  .field-type.number input,
+  .field-type.textarea textarea,
+  .search-filter__input,
+  .list-controls__search-input,
+  input.input,
+  textarea.textarea {
+    min-height: var(--beginner-touch-min);
+    font-size: 16px !important; /* prevents iOS zoom-on-focus */
+  }
+
+  /* Collection list rows: more thumb-friendly */
+  .table tbody tr td {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+
+  /* Nav drawer: clearer spacing */
+  .nav__link,
+  .nav-group__toggle {
+    min-height: var(--beginner-touch-min);
+    align-items: center;
+  }
+
+  /* Dashboard collection cards */
+  .dashboard .card,
+  .collection-list .card {
+    min-height: var(--beginner-touch-min);
+  }
+
+  /* Document header actions wrap cleanly on small screens */
+  .doc-controls,
+  .doc-header__control-container,
+  .collection-list__header {
+    gap: 0.65rem;
+  }
+
+  /* Help text under fields: a bit larger for beginners */
+  .field-description {
+    font-size: 0.875rem !important;
+    line-height: 1.45;
+    margin-top: 0.35rem;
+  }
+
+  /* Toasts: more visible on mobile */
+  [data-sonner-toaster] {
+    --width: min(100vw - 1.5rem, 24rem);
+  }
+
+  /* Upload dropzone: easier to hit with a thumb */
+  .file-field,
+  .upload,
+  .dropzone {
+    min-height: 9rem;
+  }
+}
+
+/* Soften collection group labels so they read as section titles */
+.nav-group__label {
+  letter-spacing: 0.02em;
+}
+
+/* Make list page descriptions easier to spot */
+.collection-list__header .list-header__description,
+.list-header__description,
+.gutter--left .doc-header__description {
+  max-width: 42rem;
+  line-height: 1.5;
+}
