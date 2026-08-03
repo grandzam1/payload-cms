@@ -22,7 +22,10 @@ function resolvePostgresUrl(url: string): string {
   if (!url.startsWith('postgres')) return url
   try {
     const u = new URL(url)
-    if (!u.searchParams.has('sslmode')) u.searchParams.set('sslmode', 'require')
+    // pg v8 treats sslmode=require as verify-full unless uselibpqcompat is set,
+    // which breaks Supabase pooler (self-signed chain). Keep encryption without full verify.
+    u.searchParams.set('sslmode', 'require')
+    u.searchParams.set('uselibpqcompat', 'true')
     // Transaction pooler (6543) needs pgbouncer=true for prepared statements
     if (u.port === '6543' && !u.searchParams.has('pgbouncer')) {
       u.searchParams.set('pgbouncer', 'true')
@@ -88,7 +91,8 @@ export default buildConfig({
           // Local: a few connections; Vercel serverless should stay tiny
           max: process.env.VERCEL ? 1 : 5,
           connectionTimeoutMillis: 20000,
-          ssl: process.env.VERCEL ? { rejectUnauthorized: false } : undefined,
+          // Supabase pooler presents a chain Node rejects without this
+          ssl: { rejectUnauthorized: false },
         },
         // Schema is managed via migrations — push hangs on interactive prompts / pooler
         push: false,
