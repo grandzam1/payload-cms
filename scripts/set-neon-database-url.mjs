@@ -1,6 +1,6 @@
 /**
  * Copy DATABASE_URL_UNPOOLED → DATABASE_URL for Vercel production/preview,
- * using the Neon pooler hostname and stripping channel_binding.
+ * using the direct Neon host (no -pooler rewrite) and SSL-safe query params.
  *
  * Usage: node scripts/set-neon-database-url.mjs
  */
@@ -27,32 +27,41 @@ const u = new URL(value)
 u.searchParams.delete('channel_binding')
 u.searchParams.set('sslmode', 'require')
 u.searchParams.set('uselibpqcompat', 'true')
-if (u.hostname.endsWith('.neon.tech') && !u.hostname.includes('-pooler')) {
-  u.hostname = u.hostname.replace(/^(ep-[a-z0-9-]+)/i, '$1-pooler')
-}
+// Keep the direct Neon host — do not force -pooler
 
-const pooled = u.toString()
+const databaseUrl = u.toString()
 console.log('target_host', u.host)
 
-const vercel = process.platform === 'win32' ? '.\\node_modules\\.bin\\vercel.CMD' : './node_modules/.bin/vercel'
+const vercel =
+  process.platform === 'win32'
+    ? '.\\node_modules\\.bin\\vercel.CMD'
+    : './node_modules/.bin/vercel'
 
 for (const envName of ['production', 'preview', 'development']) {
   spawnSync(vercel, ['env', 'rm', 'DATABASE_URL', envName, '--yes'], {
     stdio: 'ignore',
     shell: true,
   })
-  const add = spawnSync(vercel, ['env', 'add', 'DATABASE_URL', envName, '--yes'], {
-    input: pooled,
-    encoding: 'utf8',
-    shell: true,
-  })
+  const add = spawnSync(
+    vercel,
+    ['env', 'add', 'DATABASE_URL', envName, '--yes'],
+    {
+      input: databaseUrl,
+      encoding: 'utf8',
+      shell: true,
+    },
+  )
   const out = `${add.stdout || ''}${add.stderr || ''}`
-  console.log(envName, /Added|Updated|Error|already/i.test(out) ? out.match(/Added|Updated|Error|already[^\n]*/i)?.[0] : add.status)
+  console.log(
+    envName,
+    /Added|Updated|Error|already/i.test(out)
+      ? out.match(/Added|Updated|Error|already[^\n]*/i)?.[0]
+      : add.status,
+  )
 }
 
-// Also write local .env.neon DATABASE_URL for migrate
 const updated = text.includes('DATABASE_URL=')
-  ? text.replace(/^DATABASE_URL=.*$/m, `DATABASE_URL="${pooled}"`)
-  : `DATABASE_URL="${pooled}"\n${text}`
+  ? text.replace(/^DATABASE_URL=.*$/m, `DATABASE_URL="${databaseUrl}"`)
+  : `DATABASE_URL="${databaseUrl}"\n${text}`
 fs.writeFileSync(envFile, updated)
 console.log('LOCAL_ENV_UPDATED')

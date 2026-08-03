@@ -15,28 +15,24 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 const rawDatabaseUrl =
-  process.env.DATABASE_URL || process.env.DATABASE_URL_UNPOOLED || ''
+  process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || ''
 const usePostgres = rawDatabaseUrl.startsWith('postgres')
 
-/** Normalize Neon / pooler URLs for node-postgres on Vercel. */
+/** Normalize Neon / Postgres URLs for node-postgres (local + Vercel). */
 function resolvePostgresUrl(url: string): string {
   if (!url.startsWith('postgres')) return url
   try {
     const u = new URL(url)
     // node-pg does not support Neon's channel_binding=require
     u.searchParams.delete('channel_binding')
+    // Prefer direct Neon compute host — pooled host timeouts when pooler_enabled is false
+    if (u.hostname.endsWith('.neon.tech') && u.hostname.includes('-pooler')) {
+      u.hostname = u.hostname.replace('-pooler', '')
+    }
     // pg maps sslmode=require → verify-full unless uselibpqcompat is set
     u.searchParams.set('sslmode', 'require')
     u.searchParams.set('uselibpqcompat', 'true')
-    // On Vercel, prefer Neon pooler endpoint when given a direct host
-    if (
-      process.env.VERCEL &&
-      u.hostname.endsWith('.neon.tech') &&
-      !u.hostname.includes('-pooler')
-    ) {
-      u.hostname = u.hostname.replace(/^(ep-[a-z0-9-]+)/i, '$1-pooler')
-    }
-    // Supabase transaction pooler
+    // Supabase transaction pooler only
     if (u.port === '6543' && !u.searchParams.has('pgbouncer')) {
       u.searchParams.set('pgbouncer', 'true')
     }
