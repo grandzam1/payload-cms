@@ -17,15 +17,14 @@ const dirname = path.dirname(filename)
 const rawDatabaseUrl = process.env.DATABASE_URL || ''
 const usePostgres = rawDatabaseUrl.startsWith('postgres')
 
-/** Ensure SSL + pooler-friendly params for Vercel → Supabase */
+/** Ensure pooler-friendly params for Vercel → Supabase (SSL via pool.ssl below). */
 function resolvePostgresUrl(url: string): string {
   if (!url.startsWith('postgres')) return url
   try {
     const u = new URL(url)
-    // pg v8 treats sslmode=require as verify-full unless uselibpqcompat is set,
-    // which breaks Supabase pooler (self-signed chain). Keep encryption without full verify.
-    u.searchParams.set('sslmode', 'require')
-    u.searchParams.set('uselibpqcompat', 'true')
+    // Do not set sslmode here — modern pg maps require→verify-full and overrides pool.ssl
+    u.searchParams.delete('sslmode')
+    u.searchParams.delete('uselibpqcompat')
     // Transaction pooler (6543) needs pgbouncer=true for prepared statements
     if (u.port === '6543' && !u.searchParams.has('pgbouncer')) {
       u.searchParams.set('pgbouncer', 'true')
