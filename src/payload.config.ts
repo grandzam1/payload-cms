@@ -14,8 +14,26 @@ import { Media } from './collections/Media'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-const databaseUrl = process.env.DATABASE_URL || ''
-const usePostgres = databaseUrl.startsWith('postgres')
+const rawDatabaseUrl = process.env.DATABASE_URL || ''
+const usePostgres = rawDatabaseUrl.startsWith('postgres')
+
+/** Ensure SSL + pooler-friendly params for Vercel → Supabase */
+function resolvePostgresUrl(url: string): string {
+  if (!url.startsWith('postgres')) return url
+  try {
+    const u = new URL(url)
+    if (!u.searchParams.has('sslmode')) u.searchParams.set('sslmode', 'require')
+    // Transaction pooler (6543) needs pgbouncer=true for prepared statements
+    if (u.port === '6543' && !u.searchParams.has('pgbouncer')) {
+      u.searchParams.set('pgbouncer', 'true')
+    }
+    return u.toString()
+  } catch {
+    return url
+  }
+}
+
+const databaseUrl = usePostgres ? resolvePostgresUrl(rawDatabaseUrl) : rawDatabaseUrl
 
 const cloudinaryConfigured = Boolean(
   process.env.CLOUDINARY_CLOUD_NAME &&
@@ -69,7 +87,8 @@ export default buildConfig({
           connectionString: databaseUrl,
           // Local: a few connections; Vercel serverless should stay tiny
           max: process.env.VERCEL ? 1 : 5,
-          connectionTimeoutMillis: 10000,
+          connectionTimeoutMillis: 20000,
+          ssl: process.env.VERCEL ? { rejectUnauthorized: false } : undefined,
         },
         // Schema is managed via migrations — push hangs on interactive prompts / pooler
         push: false,
