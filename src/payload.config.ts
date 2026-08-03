@@ -54,6 +54,8 @@ export default buildConfig({
         pool: {
           connectionString: databaseUrl,
         },
+        // Create/update tables on boot (needed for first Vercel deploy)
+        push: true,
       })
     : sqliteAdapter({
         client: {
