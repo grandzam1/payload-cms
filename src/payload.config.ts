@@ -69,9 +69,12 @@ export default buildConfig({
           connectionString: databaseUrl,
           // Local: a few connections; Vercel serverless should stay tiny
           max: process.env.VERCEL ? 1 : 5,
+          connectionTimeoutMillis: 10000,
         },
         // Schema is managed via migrations — push hangs on interactive prompts / pooler
         push: false,
+        // PgBouncer/Supavisor: avoid long-lived transactions that hang on poolers
+        transactionOptions: false,
       })
     : sqliteAdapter({
         client: {

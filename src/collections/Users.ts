@@ -14,7 +14,11 @@ export const Users: CollectionConfig = {
       'People who can sign in and manage your website. Add a teammate when someone else needs access.',
     listSearchableFields: ['name', 'email'],
   },
-  auth: true,
+  auth: {
+    // Avoid session-table writes on every login (can hang behind Supabase poolers on Vercel)
+    useSessions: false,
+    tokenExpiration: 7200,
+  },
   fields: [
     {
       name: 'name',
