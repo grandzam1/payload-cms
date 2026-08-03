@@ -14,18 +14,29 @@ import { Media } from './collections/Media'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-const rawDatabaseUrl = process.env.DATABASE_URL || ''
+const rawDatabaseUrl =
+  process.env.DATABASE_URL || process.env.DATABASE_URL_UNPOOLED || ''
 const usePostgres = rawDatabaseUrl.startsWith('postgres')
 
-/** Ensure pooler-friendly params for Vercel → Supabase (SSL via pool.ssl below). */
+/** Normalize Neon / pooler URLs for node-postgres on Vercel. */
 function resolvePostgresUrl(url: string): string {
   if (!url.startsWith('postgres')) return url
   try {
     const u = new URL(url)
-    // Do not set sslmode here — modern pg maps require→verify-full and overrides pool.ssl
-    u.searchParams.delete('sslmode')
-    u.searchParams.delete('uselibpqcompat')
-    // Transaction pooler (6543) needs pgbouncer=true for prepared statements
+    // node-pg does not support Neon's channel_binding=require
+    u.searchParams.delete('channel_binding')
+    // pg maps sslmode=require → verify-full unless uselibpqcompat is set
+    u.searchParams.set('sslmode', 'require')
+    u.searchParams.set('uselibpqcompat', 'true')
+    // On Vercel, prefer Neon pooler endpoint when given a direct host
+    if (
+      process.env.VERCEL &&
+      u.hostname.endsWith('.neon.tech') &&
+      !u.hostname.includes('-pooler')
+    ) {
+      u.hostname = u.hostname.replace(/^(ep-[a-z0-9-]+)/i, '$1-pooler')
+    }
+    // Supabase transaction pooler
     if (u.port === '6543' && !u.searchParams.has('pgbouncer')) {
       u.searchParams.set('pgbouncer', 'true')
     }
@@ -89,8 +100,8 @@ export default buildConfig({
           connectionString: databaseUrl,
           // Local: a few connections; Vercel serverless should stay tiny
           max: process.env.VERCEL ? 1 : 5,
-          connectionTimeoutMillis: 20000,
-          // Supabase pooler presents a chain Node rejects without this
+          connectionTimeoutMillis: 30000,
+          // Neon/Supabase TLS — avoid self-signed / chain failures on serverless
           ssl: { rejectUnauthorized: false },
         },
         // Schema is managed via migrations — push hangs on interactive prompts / pooler
