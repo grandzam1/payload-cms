@@ -1,5 +1,7 @@
+import { postgresAdapter } from '@payloadcms/db-postgres'
 import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { s3Storage } from '@payloadcms/storage-s3'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
@@ -10,6 +12,16 @@ import { Media } from './collections/Media'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
+
+const databaseUrl = process.env.DATABASE_URL || ''
+const usePostgres = databaseUrl.startsWith('postgres')
+
+const s3Configured = Boolean(
+  process.env.S3_BUCKET &&
+    process.env.S3_ACCESS_KEY_ID &&
+    process.env.S3_SECRET_ACCESS_KEY &&
+    process.env.S3_ENDPOINT,
+)
 
 export default buildConfig({
   admin: {
@@ -37,11 +49,39 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  db: sqliteAdapter({
-    client: {
-      url: process.env.DATABASE_URL || '',
-    },
-  }),
+  db: usePostgres
+    ? postgresAdapter({
+        pool: {
+          connectionString: databaseUrl,
+        },
+      })
+    : sqliteAdapter({
+        client: {
+          url: databaseUrl || 'file:./.db',
+        },
+      }),
   sharp,
-  plugins: [],
+  plugins: [
+    s3Storage({
+      enabled: s3Configured,
+      collections: {
+        media: {
+          // Public bucket URLs — skip Payload file proxy for faster delivery
+          disablePayloadAccessControl: true,
+        },
+      },
+      bucket: process.env.S3_BUCKET || '',
+      // Direct browser uploads avoid Vercel’s ~4.5MB serverless body limit
+      clientUploads: true,
+      config: {
+        credentials: {
+          accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
+          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+        },
+        region: process.env.S3_REGION || 'eu-central-1',
+        endpoint: process.env.S3_ENDPOINT,
+        forcePathStyle: true,
+      },
+    }),
+  ],
 })

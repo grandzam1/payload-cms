@@ -13,6 +13,16 @@ const nextConfig: NextConfig = {
         pathname: '/api/media/file/**',
       },
     ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'uaizniebqteuaoexqpji.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'uaizniebqteuaoexqpji.storage.supabase.co',
+      },
+    ],
   },
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
