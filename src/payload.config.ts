@@ -53,14 +53,22 @@ export default buildConfig({
     ? postgresAdapter({
         pool: {
           connectionString: databaseUrl,
+          // Local: a few connections; Vercel serverless should stay tiny
+          max: process.env.VERCEL ? 1 : 5,
         },
-        // Create/update tables on boot (needed for first Vercel deploy)
-        push: true,
+        // Schema is managed via migrations — push hangs on interactive prompts / pooler
+        push: false,
       })
     : sqliteAdapter({
         client: {
           url: databaseUrl || 'file:./.db',
         },
+        // Dev schema push can hang on interactive prompts under Next; use migrations instead
+        push: false,
+        wal: {
+          synchronous: 'NORMAL',
+        },
+        busyTimeout: 5000,
       }),
   sharp,
   plugins: [
