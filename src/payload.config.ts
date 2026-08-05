@@ -1,4 +1,5 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
+import { vercelPostgresAdapter } from '@payloadcms/db-vercel-postgres'
 import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { s3Storage } from '@payloadcms/storage-s3'
@@ -91,20 +92,29 @@ export default buildConfig({
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
   db: usePostgres
-    ? postgresAdapter({
-        pool: {
-          connectionString: databaseUrl,
-          // Local: a few connections; Vercel serverless should stay tiny
-          max: process.env.VERCEL ? 1 : 5,
-          connectionTimeoutMillis: 30000,
-          // Neon/Supabase TLS — avoid self-signed / chain failures on serverless
-          ssl: { rejectUnauthorized: false },
-        },
-        // Schema is managed via migrations — push hangs on interactive prompts / pooler
-        push: false,
-        // PgBouncer/Supavisor: avoid long-lived transactions that hang on poolers
-        transactionOptions: false,
-      })
+    ? process.env.VERCEL
+      ? // Vercel → Neon: WebSocket serverless driver (TCP node-pg times out on Vercel)
+        vercelPostgresAdapter({
+          pool: {
+            connectionString: databaseUrl,
+            max: 1,
+          },
+          push: false,
+          transactionOptions: false,
+        })
+      : postgresAdapter({
+          pool: {
+            connectionString: databaseUrl,
+            max: 5,
+            connectionTimeoutMillis: 30000,
+            // Neon TLS — avoid self-signed / chain failures
+            ssl: { rejectUnauthorized: false },
+          },
+          // Schema is managed via migrations — push hangs on interactive prompts / pooler
+          push: false,
+          // PgBouncer/Supavisor: avoid long-lived transactions that hang on poolers
+          transactionOptions: false,
+        })
     : sqliteAdapter({
         client: {
           url: databaseUrl || 'file:./.db',

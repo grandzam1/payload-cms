@@ -20,6 +20,7 @@
   "dependencies": {
     "@payloadcms/db-postgres": "^3.87.0",
     "@payloadcms/db-sqlite": "3.87.0",
+    "@payloadcms/db-vercel-postgres": "3.87.0",
     "@payloadcms/next": "3.87.0",
     "@payloadcms/richtext-lexical": "3.87.0",
     "@payloadcms/storage-s3": "^3.87.0",
@@ -54,7 +55,7 @@
     "vitest": "4.0.18"
   },
   "engines": {
-    "node": "^18.20.2 || >=20.9.0",
+    "node": "22.x",
     "pnpm": "^9 || ^10 || ^11"
   },
   "pnpm": {
