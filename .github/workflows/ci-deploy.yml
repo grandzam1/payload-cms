@@ -98,50 +98,81 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      statuses: read
+      deployments: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install pnpm
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
         uses: pnpm/action-setup@v4
         with:
           version: 10
 
       - name: Setup Node.js
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
 
       - name: Install dependencies
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
         run: pnpm install --frozen-lockfile
 
       - name: Link Vercel project
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           set -euo pipefail
-          if [ -z "${VERCEL_ORG_ID:-}" ] || [ -z "${VERCEL_PROJECT_ID:-}" ]; then
-            echo "Missing VERCEL_ORG_ID or VERCEL_PROJECT_ID"
-            exit 1
-          fi
           mkdir -p .vercel
           printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
 
-      - name: Deploy to Vercel production
+      - name: Deploy to Vercel production (token)
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx vercel deploy --prod --yes --token="$VERCEL_TOKEN"
+
+      - name: Wait for Vercel Git deploy (no token)
+        if: ${{ secrets.VERCEL_TOKEN == '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          # Prefer VERCEL_TOKEN if set; otherwise Vercel CLI uses GitHub OIDC (id-token).
-          if [ -n "${VERCEL_TOKEN:-}" ]; then
-            npx vercel deploy --prod --yes --token="$VERCEL_TOKEN"
-          else
-            npx vercel deploy --prod --yes
-          fi
+          echo "VERCEL_TOKEN not set — waiting for Vercel GitHub integration on $GITHUB_SHA"
+          echo "Tip: add repo secret VERCEL_TOKEN so GHA deploys Vercel only after the build gate."
+          for i in $(seq 1 60); do
+            checks=$(gh api "repos/${{ github.repository }}/commits/${GITHUB_SHA}/check-runs" \
+              --jq '[.check_runs[]? | select(.name|test("Vercel";"i")) | {name,status,conclusion}]' 2>/dev/null || echo '[]')
+            statuses=$(gh api "repos/${{ github.repository }}/commits/${GITHUB_SHA}/status" \
+              --jq '[.statuses[]? | select(.context|test("Vercel";"i")) | {context,state}]' 2>/dev/null || echo '[]')
+            echo "try $i checks=$checks statuses=$statuses"
+            if echo "$checks" | grep -qi '"conclusion":"success"'; then
+              echo "Vercel check succeeded"
+              exit 0
+            fi
+            if echo "$statuses" | grep -qi '"state":"success"'; then
+              echo "Vercel status succeeded"
+              exit 0
+            fi
+            if echo "$checks" | grep -qiE '"conclusion":"(failure|cancelled|timed_out)"'; then
+              echo "Vercel check failed"
+              exit 1
+            fi
+            if echo "$statuses" | grep -qiE '"state":"(failure|error)"'; then
+              echo "Vercel status failed"
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "Timed out waiting for Vercel"
+          exit 1
 
   smoke:
     name: Smoke prod hosts

@@ -1,9 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "regions": ["iad1"],
-  "git": {
-    "deploymentEnabled": false
-  },
-  "ignoreCommand": "echo 'Vercel git deploys disabled — GitHub Actions deploys after CI build' && exit 1"
+  "regions": ["iad1"]
 }
