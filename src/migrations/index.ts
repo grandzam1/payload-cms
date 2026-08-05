@@ -1,6 +1,7 @@
 import * as migration_20260803_042552_initial from './20260803_042552_initial';
 import * as migration_20260803_080235_cloudinary_media_fields from './20260803_080235_cloudinary_media_fields';
 import * as migration_20260805_013000_admin_ia from './20260805_013000_admin_ia';
+import * as migration_20260805_035400_media_alt_optional from './20260805_035400_media_alt_optional';
 
 export const migrations = [
   {
@@ -17,5 +18,10 @@ export const migrations = [
     up: migration_20260805_013000_admin_ia.up,
     down: migration_20260805_013000_admin_ia.down,
     name: '20260805_013000_admin_ia',
+  },
+  {
+    up: migration_20260805_035400_media_alt_optional.up,
+    down: migration_20260805_035400_media_alt_optional.down,
+    name: '20260805_035400_media_alt_optional',
   },
 ]
