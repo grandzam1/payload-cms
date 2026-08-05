@@ -220,7 +220,7 @@ export interface Category {
   createdAt: string;
 }
 /**
- * Images and files reused across pages and posts.
+ * Upload pictures and PDFs here. Always add a short description so the file is easy to find later.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
@@ -228,7 +228,7 @@ export interface Category {
 export interface Media {
   id: number;
   /**
-   * Describe the image for accessibility and SEO.
+   * Say what is in the image in plain words. Required so visitors and search engines understand the file.
    */
   alt: string;
   /**
@@ -305,7 +305,7 @@ export interface Media {
   focalY?: number | null;
 }
 /**
- * People who can sign in and manage this studio.
+ * People who can sign in. Add someone only when they need access.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
@@ -313,9 +313,9 @@ export interface Media {
 export interface User {
   id: number;
   /**
-   * Display name shown in the admin panel.
+   * How this person appears in the team list (example: Sam Rivera).
    */
-  name?: string | null;
+  name: string;
   updatedAt: string;
   createdAt: string;
   email: string;

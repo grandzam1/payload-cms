@@ -1,99 +1,28 @@
-/* Filament-inspired admin chrome — driven by CSS variables + BEM overrides */
+/* payload-theme: shadcn-style admin chrome */
+@import 'payload-theme/styles.css';
+
+/* Beginner-friendly + mobile-first Admin Panel polish */
 
 :root {
-  --studio-nav-width: 16.5rem;
-  --studio-radius: 4px;
-  --studio-touch-min: 40px;
-  --font-body: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --beginner-touch-min: 44px;
 }
 
-html {
-  font-family: var(--font-body);
-}
-
-/* Slightly denser, mature sidebar (Filament-like) */
-.nav {
-  --nav-width: var(--studio-nav-width);
-}
-
-.nav__wrap,
-.template-default__nav {
-  border-right: 1px solid var(--theme-elevation-150);
-}
-
-.nav-group__label {
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  font-size: 0.68rem !important;
-  font-weight: 700 !important;
-  color: var(--theme-elevation-500) !important;
-  margin-top: 0.65rem;
-}
-
-.nav__link,
-.nav-group__toggle {
-  border-radius: var(--studio-radius);
-  min-height: var(--studio-touch-min);
-  align-items: center;
-}
-
-.nav__link:hover,
-.nav__link.active {
-  background: var(--theme-elevation-100);
-}
-
-/* Hide default dashboard collection cards — StudioDashboard is the home UI */
-.dashboard .dashboard__group,
-.dashboard .dashboard__label,
-.dashboard .card {
-  display: none !important;
-}
-
-.dashboard {
-  padding-top: 0.25rem;
-}
-
-/* List + document chrome */
-.collection-list__header .list-header__description,
-.list-header__description,
-.gutter--left .doc-header__description {
-  max-width: 42rem;
-  line-height: 1.5;
-  color: var(--theme-elevation-650);
-}
-
-.btn,
-.btn--style-primary,
-.btn--style-secondary,
-button.btn {
-  border-radius: var(--studio-radius);
-}
-
-.table tbody tr td {
-  padding-top: 0.7rem;
-  padding-bottom: 0.7rem;
-}
-
-.field-description {
-  font-size: 0.8125rem !important;
-  line-height: 1.45;
-  margin-top: 0.3rem;
-}
-
-/* Mobile comfort */
+/* Comfortable reading size on phones */
 @media (max-width: 768px) {
   html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
 
+  /* Larger tap targets for primary actions */
   .btn,
   .btn--style-primary,
   .btn--style-secondary,
   button.btn {
-    min-height: 44px;
+    min-height: var(--beginner-touch-min);
   }
 
+  /* Form fields: easier to tap and read */
   .field-type.text input,
   .field-type.email input,
   .field-type.password input,
@@ -103,22 +32,144 @@ button.btn {
   .list-controls__search-input,
   input.input,
   textarea.textarea {
-    min-height: 44px;
-    font-size: 16px !important;
+    min-height: var(--beginner-touch-min);
+    font-size: 16px !important; /* prevents iOS zoom-on-focus */
   }
 
+  /* Collection list rows: more thumb-friendly */
+  .table tbody tr td {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+
+  /* Nav drawer: clearer spacing */
   .nav__link,
   .nav-group__toggle {
-    min-height: 44px;
+    min-height: var(--beginner-touch-min);
+    align-items: center;
   }
 
+  /* Dashboard collection cards */
+  .dashboard .card,
+  .collection-list .card {
+    min-height: var(--beginner-touch-min);
+  }
+
+  /* Document header actions wrap cleanly on small screens */
+  .doc-controls,
+  .doc-header__control-container,
+  .collection-list__header {
+    gap: 0.65rem;
+  }
+
+  /* Help text under fields: a bit larger for beginners */
+  .field-description {
+    font-size: 0.875rem !important;
+    line-height: 1.45;
+    margin-top: 0.35rem;
+  }
+
+  /* Toasts: more visible on mobile */
   [data-sonner-toaster] {
     --width: min(100vw - 1.5rem, 24rem);
   }
 
+  /* Upload dropzone: easier to hit with a thumb */
   .file-field,
   .upload,
   .dropzone {
     min-height: 9rem;
   }
 }
+
+/* Soften collection group labels so they read as section titles */
+.nav-group__label {
+  letter-spacing: 0.02em;
+}
+
+/* Make list page descriptions easier to spot */
+.collection-list__header .list-header__description,
+.list-header__description,
+.gutter--left .doc-header__description {
+  max-width: 42rem;
+  line-height: 1.5;
+}
+
+/* ====================================================================
+ * List header actions — one shared size for Create New / Bulk Upload / etc.
+ * Payload + payload-theme mix pill paddings; force a consistent control box.
+ * ==================================================================== */
+:root {
+  --studio-action-h: 40px;
+  --studio-action-min-w: 132px;
+  --studio-action-pad-x: 16px;
+  --studio-action-font: 0.8125rem;
+}
+
+.list-header__title-actions,
+.list-header__title-and-actions,
+.list-header__title-action {
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.list-header__title-actions .btn,
+.list-header__title-actions a.btn,
+.list-header__title-action .btn,
+.list-header__title-action a.btn,
+.list-create-new-doc__create-new-button,
+a.list-create-new-doc__create-new-button {
+  box-sizing: border-box;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--studio-action-h) !important;
+  height: var(--studio-action-h) !important;
+  min-width: var(--studio-action-min-w) !important;
+  padding-block: 0 !important;
+  padding-inline: var(--studio-action-pad-x) !important;
+  font-size: var(--studio-action-font) !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  white-space: nowrap;
+}
+
+.list-header__title-actions .btn .btn__content,
+.list-create-new-doc__create-new-button .btn__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+}
+
+/* Keep docked desktop actions aligned with the search toolbar height */
+@media (min-width: 1025px) {
+  .collection-list {
+    --pt-toolbar-h: var(--studio-action-h);
+    --pt-list-actions-reserve: calc(var(--studio-action-min-w) + 16px);
+  }
+
+  .collection-list:has(.list-header__title-actions > :nth-child(2)) {
+    --pt-list-actions-reserve: calc((var(--studio-action-min-w) * 2) + 8px + 16px);
+  }
+
+  .collection-list .list-header__title-actions {
+    height: var(--studio-action-h);
+  }
+}
+
+/* Columns / Filters chips in the list toolbar — same height language */
+.list-controls .btn--style-pill,
+.list-controls .btn--size-small,
+.search-bar ~ .list-controls .btn,
+#toggle-list-columns,
+#toggle-list-filters {
+  min-height: var(--studio-action-h);
+  height: var(--studio-action-h);
+  box-sizing: border-box;
+  padding-block: 0 !important;
+  display: inline-flex;
+  align-items: center;
+}
+

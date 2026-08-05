@@ -1,7 +1,8 @@
 allowBuilds:
+  bufferutil: false
   esbuild: true
-  netlify-cli: set this to true or false
+  netlify-cli: false
   sharp: true
-  unix-dgram: set this to true or false
+  unix-dgram: false
   unrs-resolver: true
   workerd: true

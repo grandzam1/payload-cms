@@ -4,6 +4,7 @@ import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { s3Storage } from '@payloadcms/storage-s3'
 import { cloudinaryStorage } from 'payload-cloudinary'
+import { payloadTheme } from 'payload-theme'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
@@ -82,11 +83,9 @@ export default buildConfig({
       duration: 6000,
       position: 'bottom-center',
     },
+    // Nav, dashboard, and login chrome come from payload-theme (below).
+    // Keep graphics as a lightweight brand mark for tabs / fallbacks.
     components: {
-      // Keep built-in Nav (auth/logout). Brand + groups come from manifest + CSS.
-      beforeNavLinks: ['/components/admin/NavBrand'],
-      beforeDashboard: ['/components/admin/StudioDashboard'],
-      beforeLogin: ['/components/admin/LoginHelp'],
       graphics: {
         Icon: '/components/admin/graphics/Icon',
         Logo: '/components/admin/graphics/Logo',
@@ -142,6 +141,34 @@ export default buildConfig({
       }),
   sharp,
   plugins: [
+    // Beginner-friendly shadcn-style admin (dashboard, sidebar, login, ⌘K)
+    payloadTheme({
+      preset: 'ocean',
+      radius: 'lg',
+      font: 'geist',
+      login: {
+        heading: adminManifest.brand.name,
+        tagline: adminManifest.brand.loginHelp,
+      },
+      nav: {
+        icons: {
+          pages: 'file-text',
+          posts: 'newspaper',
+          categories: 'tags',
+          media: 'image',
+          users: 'users',
+          'site-settings': 'settings',
+        },
+      },
+      dashboard: {
+        widgets: [
+          {
+            component: '/components/admin/BeginnerTipsWidget',
+            width: 'full',
+          },
+        ],
+      },
+    }),
     cloudinaryStorage({
       enabled: cloudinaryConfigured,
       config: {

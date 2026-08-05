@@ -23,10 +23,11 @@ export const Media: CollectionConfig = {
     {
       name: 'alt',
       type: 'text',
-      label: 'Alt text',
+      label: 'Short description',
       required: true,
       admin: {
-        description: 'Describe the image for accessibility and SEO.',
+        description:
+          'Say what is in the image in plain words. Required so visitors and search engines understand the file.',
         placeholder: 'Blue coffee mug on a wooden table',
       },
     },

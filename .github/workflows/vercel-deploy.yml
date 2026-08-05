@@ -1,101 +1,37 @@
 name: Deploy Vercel + smoke (Linux)
 
-# Vercel production builds via the GitHub integration (Linux builders).
-# This workflow only verifies the live hosts from ubuntu-latest — no Windows.
+# Superseded by ci-deploy.yml. Manual smoke only.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
-  group: vercel-smoke-${{ github.ref }}
+  group: vercel-smoke-manual-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  wait-and-smoke:
+  smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - https://payload-cms-tan-nine.vercel.app
+          - https://payload-cms-neon-test.netlify.app
     steps:
-      - name: Wait for Vercel production deploy
+      - name: Probe admin + login
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          # Give the Vercel GitHub integration time to pick up the push
-          for i in $(seq 1 40); do
-            state=$(gh api "repos/${{ github.repository }}/deployments?environment=Production&per_page=5" \
-              --jq '.[0].sha // empty' 2>/dev/null || true)
-            statuses=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/status" \
-              --jq '.statuses[]? | select(.context|test("Vercel";"i")) | "\(.context)=\(.state)"' 2>/dev/null || true)
-            echo "try $i: $statuses"
-            if echo "$statuses" | grep -qi 'success'; then
-              echo "Vercel status success"
-              exit 0
-            fi
-            if echo "$statuses" | grep -qiE 'failure|error'; then
-              echo "Vercel status failed"
-              exit 1
-            fi
-            # Fallback: probe production URL while waiting
-            code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 20 \
-              "https://payload-cms-tan-nine.vercel.app/admin" || echo 000)
-            echo "prod /admin -> $code"
-            sleep 15
-          done
-          echo "Timed out waiting for Vercel status; continuing to smoke test production URL"
-          exit 0
-
-      - name: Smoke test Vercel
-        env:
+          BASE: ${{ matrix.host }}
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
         run: |
           set -euo pipefail
-          BASE="https://payload-cms-tan-nine.vercel.app"
-          echo "Probing $BASE"
-
-          code=$(curl -sS -o /tmp/admin.html -w "%{http_code}" --max-time 45 "$BASE/admin")
+          code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 45 "$BASE/admin")
           echo "GET /admin -> $code"
           test "$code" = "200"
-
-          api=$(curl -sS -o /tmp/users.json -w "%{http_code}" --max-time 45 "$BASE/api/users")
-          echo "GET /api/users -> $api"
-          test "$api" = "403" -o "$api" = "200"
-
-          if [ -z "${ADMIN_EMAIL:-}" ] || [ -z "${ADMIN_PASSWORD:-}" ]; then
-            echo "Missing ADMIN_EMAIL/ADMIN_PASSWORD secrets"
-            exit 1
-          fi
-
           login=$(curl -sS -o /tmp/login.json -w "%{http_code}" --max-time 60 \
             -X POST "$BASE/api/users/login" \
             -H 'content-type: application/json' \
             -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}")
           echo "POST /api/users/login -> $login"
-          python3 - <<'PY'
-          import json
-          try:
-            data=json.load(open('/tmp/login.json'))
-            print('login_keys=', list(data.keys())[:8])
-            print('has_user=', 'user' in data)
-          except Exception as e:
-            print('body_parse_err', type(e).__name__)
-          PY
-          test "$login" = "200"
-
-      - name: Smoke test Netlify (control)
-        env:
-          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-        run: |
-          set -euo pipefail
-          BASE="https://payload-cms-neon-test.netlify.app"
-          code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 45 "$BASE/admin")
-          echo "Netlify GET /admin -> $code"
-          test "$code" = "200"
-          login=$(curl -sS -o /tmp/nl-login.json -w "%{http_code}" --max-time 60 \
-            -X POST "$BASE/api/users/login" \
-            -H 'content-type: application/json' \
-            -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}")
-          echo "Netlify POST /api/users/login -> $login"
           test "$login" = "200"

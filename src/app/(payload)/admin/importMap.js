@@ -21,13 +21,18 @@ import { StrikethroughFeatureClient as StrikethroughFeatureClient_e70f5e05f09f93
 import { UnderlineFeatureClient as UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+import { MediaListToggle as MediaListToggle_f436cf2a4719114d9e44505773a04007 } from 'payload-theme/client'
+import { Nav as Nav_f436cf2a4719114d9e44505773a04007 } from 'payload-theme/client'
 import { default as default_8c7579001d094aae258586b09a2f4a85 } from '../../../components/admin/graphics/Icon'
 import { default as default_da4f7e8a6c72793056168c73c78f997f } from '../../../components/admin/graphics/Logo'
-import { default as default_19a5fecc6fbaf0b4e88bf52bb9f17e0e } from '../../../components/admin/StudioDashboard'
-import { default as default_b7b41ed2b3a1d48b6eeacbd6cf2077e3 } from '../../../components/admin/LoginHelp'
-import { default as default_d7dd6c791c113ce8ff240c7282294e70 } from '../../../components/admin/NavBrand'
+import { HeaderActions as HeaderActions_f436cf2a4719114d9e44505773a04007 } from 'payload-theme/client'
+import { LoginHero as LoginHero_37fe5310e1c82b2fade6b239ca4c79e5 } from 'payload-theme/rsc'
+import { ThemeProvider as ThemeProvider_f436cf2a4719114d9e44505773a04007 } from 'payload-theme/client'
+import { ListQuickActions as ListQuickActions_f436cf2a4719114d9e44505773a04007 } from 'payload-theme/client'
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
+import { Dashboard as Dashboard_37fe5310e1c82b2fade6b239ca4c79e5 } from 'payload-theme/rsc'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
+import { default as default_664b657c0a2cf0b78b9e964833194e01 } from '../../../components/admin/BeginnerTipsWidget'
 
 /** @type import('payload').ImportMap */
 export const importMap = {
@@ -54,11 +59,16 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#UnderlineFeatureClient": UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#BoldFeatureClient": BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+  "payload-theme/client#MediaListToggle": MediaListToggle_f436cf2a4719114d9e44505773a04007,
+  "payload-theme/client#Nav": Nav_f436cf2a4719114d9e44505773a04007,
   "/components/admin/graphics/Icon#default": default_8c7579001d094aae258586b09a2f4a85,
   "/components/admin/graphics/Logo#default": default_da4f7e8a6c72793056168c73c78f997f,
-  "/components/admin/StudioDashboard#default": default_19a5fecc6fbaf0b4e88bf52bb9f17e0e,
-  "/components/admin/LoginHelp#default": default_b7b41ed2b3a1d48b6eeacbd6cf2077e3,
-  "/components/admin/NavBrand#default": default_d7dd6c791c113ce8ff240c7282294e70,
+  "payload-theme/client#HeaderActions": HeaderActions_f436cf2a4719114d9e44505773a04007,
+  "payload-theme/rsc#LoginHero": LoginHero_37fe5310e1c82b2fade6b239ca4c79e5,
+  "payload-theme/client#ThemeProvider": ThemeProvider_f436cf2a4719114d9e44505773a04007,
+  "payload-theme/client#ListQuickActions": ListQuickActions_f436cf2a4719114d9e44505773a04007,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,
-  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
+  "payload-theme/rsc#Dashboard": Dashboard_37fe5310e1c82b2fade6b239ca4c79e5,
+  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
+  "/components/admin/BeginnerTipsWidget#default": default_664b657c0a2cf0b78b9e964833194e01
 }

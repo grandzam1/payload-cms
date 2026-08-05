@@ -1,0 +1,183 @@
+name: CI build then deploy (Linux)
+
+# Every push to main: build first on GitHub Linux.
+# Netlify + Vercel deploy only if that build succeeds.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (gate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Production build
+        env:
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: |
+          set -euo pipefail
+          # Gate compile only — placeholders are fine if secrets are absent
+          export PAYLOAD_SECRET="${PAYLOAD_SECRET:-ci-build-placeholder-secret-min-32-chars}"
+          export DATABASE_URL="${DATABASE_URL:-postgresql://ci:ci@127.0.0.1:5432/ci}"
+          export DATABASE_URL_UNPOOLED="${DATABASE_URL_UNPOOLED:-$DATABASE_URL}"
+          pnpm build
+
+  deploy-netlify:
+    name: Deploy Netlify
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy to Netlify (Linux build + publish)
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_FOLDER: ${{ secrets.CLOUDINARY_FOLDER }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NETLIFY_AUTH_TOKEN:-}" ] || [ -z "${NETLIFY_SITE_ID:-}" ]; then
+            echo "Missing NETLIFY_AUTH_TOKEN or NETLIFY_SITE_ID"
+            exit 1
+          fi
+          npx netlify-cli deploy --build --prod --message "GHA ${GITHUB_SHA}"
+
+  deploy-vercel:
+    name: Deploy Vercel
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Link Vercel project
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VERCEL_ORG_ID:-}" ] || [ -z "${VERCEL_PROJECT_ID:-}" ]; then
+            echo "Missing VERCEL_ORG_ID or VERCEL_PROJECT_ID"
+            exit 1
+          fi
+          mkdir -p .vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
+
+      - name: Deploy to Vercel production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          # Prefer VERCEL_TOKEN if set; otherwise Vercel CLI uses GitHub OIDC (id-token).
+          if [ -n "${VERCEL_TOKEN:-}" ]; then
+            npx vercel deploy --prod --yes --token="$VERCEL_TOKEN"
+          else
+            npx vercel deploy --prod --yes
+          fi
+
+  smoke:
+    name: Smoke prod hosts
+    needs: [deploy-netlify, deploy-vercel]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - https://payload-cms-tan-nine.vercel.app
+          - https://payload-cms-neon-test.netlify.app
+    steps:
+      - name: Probe admin + login
+        env:
+          BASE: ${{ matrix.host }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          echo "Host: $BASE"
+          # Give CDN a moment after deploy
+          sleep 20
+          code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 45 "$BASE/admin")
+          echo "GET /admin -> $code"
+          test "$code" = "200"
+          api=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 45 "$BASE/api/users")
+          echo "GET /api/users -> $api"
+          test "$api" = "403" -o "$api" = "200"
+          if [ -z "${ADMIN_EMAIL:-}" ] || [ -z "${ADMIN_PASSWORD:-}" ]; then
+            echo "Missing ADMIN_EMAIL/ADMIN_PASSWORD"
+            exit 1
+          fi
+          login=$(curl -sS -o /tmp/login.json -w "%{http_code}" --max-time 60 \
+            -X POST "$BASE/api/users/login" \
+            -H 'content-type: application/json' \
+            -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}")
+          echo "POST /api/users/login -> $login"
+          test "$login" = "200"

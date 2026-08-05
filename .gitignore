@@ -65,3 +65,6 @@ node_modules/
 .env.*
 !.env.example
 supabase/.temp/
+
+# Local Netlify folder
+.netlify

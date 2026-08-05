@@ -29,8 +29,9 @@ export const Users: CollectionConfig = {
       name: 'name',
       type: 'text',
       label: 'Full name',
+      required: true,
       admin: {
-        description: 'Display name shown in the admin panel.',
+        description: 'How this person appears in the team list (example: Sam Rivera).',
         placeholder: 'Sam Rivera',
       },
     },

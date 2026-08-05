@@ -48,10 +48,10 @@ export const adminManifest = {
     name: 'Content Studio',
     shortName: 'Studio',
     titleSuffix: '— Content Studio',
-    tagline: 'Manage pages, posts, media, and settings in one place.',
+    tagline: 'Manage pages, posts, media, and settings — no coding needed.',
     loginTitle: 'Sign in to Content Studio',
     loginHelp:
-      'Use your team email and password. After sign-in you will land on the dashboard.',
+      'Enter your team email and password. After sign-in you land on a simple dashboard with clear shortcuts.',
   },
 
   /**
@@ -107,10 +107,11 @@ export const adminManifest = {
     media: {
       kind: 'collection' as const,
       slug: 'media',
-      singular: 'Media',
-      plural: 'Media',
+      singular: 'Photo or File',
+      plural: 'Photos & Files',
       groupId: 'media' as const,
-      description: 'Images and files reused across pages and posts.',
+      description:
+        'Upload pictures and PDFs here. Always add a short description so the file is easy to find later.',
       useAsTitle: 'filename',
       defaultColumns: ['filename', 'alt', 'updatedAt'],
       showOnDashboard: true,
@@ -119,11 +120,11 @@ export const adminManifest = {
     users: {
       kind: 'collection' as const,
       slug: 'users',
-      singular: 'User',
-      plural: 'Users',
+      singular: 'Team Member',
+      plural: 'Team Members',
       groupId: 'system' as const,
-      description: 'People who can sign in and manage this studio.',
-      useAsTitle: 'email',
+      description: 'People who can sign in. Add someone only when they need access.',
+      useAsTitle: 'name',
       defaultColumns: ['name', 'email', 'updatedAt'],
       listSearchableFields: ['name', 'email'],
       showOnDashboard: true,
