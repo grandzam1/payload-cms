@@ -1,23 +1,28 @@
 import type { CollectionConfig } from 'payload'
+import { adminManifest, collectionAdmin } from '../admin/admin.manifest'
+import { authenticated } from '../access'
+
+const resource = adminManifest.collections.users
 
 export const Users: CollectionConfig = {
-  slug: 'users',
+  slug: resource.slug,
   labels: {
-    singular: 'Team Member',
-    plural: 'Team Members',
+    singular: resource.singular,
+    plural: resource.plural,
   },
   admin: {
-    useAsTitle: 'email',
-    defaultColumns: ['name', 'email', 'updatedAt'],
-    group: 'Your team',
-    description:
-      'People who can sign in and manage your website. Add a teammate when someone else needs access.',
-    listSearchableFields: ['name', 'email'],
+    ...collectionAdmin('users'),
   },
   auth: {
-    // Avoid session-table writes on every login (can hang behind Supabase poolers on Vercel)
+    // Avoid session-table writes on every login (can hang behind poolers on Vercel)
     useSessions: false,
     tokenExpiration: 7200,
+  },
+  access: {
+    read: authenticated,
+    create: authenticated,
+    update: authenticated,
+    delete: authenticated,
   },
   fields: [
     {
@@ -25,10 +30,9 @@ export const Users: CollectionConfig = {
       type: 'text',
       label: 'Full name',
       admin: {
-        description: 'A friendly name so you can tell people apart (example: Sam Rivera).',
+        description: 'Display name shown in the admin panel.',
         placeholder: 'Sam Rivera',
       },
     },
-    // Email & password are added automatically by auth: true
   ],
 }

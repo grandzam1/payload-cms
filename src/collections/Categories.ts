@@ -2,16 +2,16 @@ import type { CollectionConfig } from 'payload'
 import { adminManifest, collectionAdmin } from '../admin/admin.manifest'
 import { anyone, authenticated } from '../access'
 
-const resource = adminManifest.collections.media
+const resource = adminManifest.collections.categories
 
-export const Media: CollectionConfig = {
+export const Categories: CollectionConfig = {
   slug: resource.slug,
   labels: {
     singular: resource.singular,
     plural: resource.plural,
   },
   admin: {
-    ...collectionAdmin('media'),
+    ...collectionAdmin('categories'),
   },
   access: {
     read: anyone,
@@ -21,17 +21,26 @@ export const Media: CollectionConfig = {
   },
   fields: [
     {
-      name: 'alt',
+      name: 'title',
       type: 'text',
-      label: 'Alt text',
       required: true,
+      label: 'Title',
+    },
+    {
+      name: 'slug',
+      type: 'text',
+      required: true,
+      unique: true,
+      label: 'URL slug',
       admin: {
-        description: 'Describe the image for accessibility and SEO.',
-        placeholder: 'Blue coffee mug on a wooden table',
+        description: 'Used in category URLs. Example: news',
+        placeholder: 'news',
       },
     },
+    {
+      name: 'description',
+      type: 'textarea',
+      label: 'Description',
+    },
   ],
-  upload: {
-    mimeTypes: ['image/*', 'application/pdf'],
-  },
 }

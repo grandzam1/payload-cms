@@ -9,8 +9,10 @@ import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
-import { Users } from './collections/Users'
-import { Media } from './collections/Media'
+import { collections } from './collections'
+import { SiteSettings } from './globals/SiteSettings'
+import { adminManifest } from './admin/admin.manifest'
+import { migrations } from './migrations'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -67,13 +69,13 @@ const s3PublicBase =
 
 export default buildConfig({
   admin: {
-    user: Users.slug,
+    user: adminManifest.collections.users.slug,
     importMap: {
       baseDir: path.resolve(dirname),
     },
     meta: {
-      titleSuffix: '— Content Studio',
-      description: 'A simple place to manage your website content, team, and files.',
+      titleSuffix: adminManifest.brand.titleSuffix,
+      description: adminManifest.brand.tagline,
     },
     dateFormat: 'MMMM d, yyyy',
     toast: {
@@ -81,11 +83,18 @@ export default buildConfig({
       position: 'bottom-center',
     },
     components: {
-      beforeDashboard: ['/components/admin/WelcomeDashboard'],
+      // Keep built-in Nav (auth/logout). Brand + groups come from manifest + CSS.
+      beforeNavLinks: ['/components/admin/NavBrand'],
+      beforeDashboard: ['/components/admin/StudioDashboard'],
       beforeLogin: ['/components/admin/LoginHelp'],
+      graphics: {
+        Icon: '/components/admin/graphics/Icon',
+        Logo: '/components/admin/graphics/Logo',
+      },
     },
   },
-  collections: [Users, Media],
+  collections,
+  globals: [SiteSettings],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -101,6 +110,8 @@ export default buildConfig({
           },
           push: false,
           transactionOptions: false,
+          migrationDir: path.resolve(dirname, 'migrations'),
+          prodMigrations: migrations,
         })
       : postgresAdapter({
           pool: {
@@ -114,6 +125,8 @@ export default buildConfig({
           push: false,
           // PgBouncer/Supavisor: avoid long-lived transactions that hang on poolers
           transactionOptions: false,
+          migrationDir: path.resolve(dirname, 'migrations'),
+          prodMigrations: migrations,
         })
     : sqliteAdapter({
         client: {
@@ -125,6 +138,7 @@ export default buildConfig({
           synchronous: 'NORMAL',
         },
         busyTimeout: 5000,
+        migrationDir: path.resolve(dirname, 'migrations'),
       }),
   sharp,
   plugins: [
