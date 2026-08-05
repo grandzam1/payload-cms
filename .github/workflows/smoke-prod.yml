@@ -1,0 +1,56 @@
+name: Smoke prod hosts (Linux)
+
+# Lightweight check only — no Windows, no local deploys
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - https://payload-cms-tan-nine.vercel.app
+          - https://payload-cms-neon-test.netlify.app
+    steps:
+      - name: Probe admin + login
+        env:
+          BASE: ${{ matrix.host }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          echo "Host: $BASE"
+          code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 45 "$BASE/admin")
+          echo "GET /admin -> $code"
+          test "$code" = "200"
+
+          api=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 45 "$BASE/api/users")
+          echo "GET /api/users -> $api"
+          test "$api" = "403" -o "$api" = "200"
+
+          if [ -z "${ADMIN_EMAIL:-}" ] || [ -z "${ADMIN_PASSWORD:-}" ]; then
+            echo "Missing ADMIN_EMAIL/ADMIN_PASSWORD — fail login check setup"
+            exit 1
+          fi
+
+          login=$(curl -sS -o /tmp/login.json -w "%{http_code}" --max-time 60 \
+            -X POST "$BASE/api/users/login" \
+            -H 'content-type: application/json' \
+            -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}")
+          echo "POST /api/users/login -> $login"
+          # Do not print full body (may contain tokens)
+          python3 - <<'PY'
+          import json
+          try:
+            data=json.load(open('/tmp/login.json'))
+            print('login_keys=', sorted(data.keys())[:8])
+            print('has_user=', 'user' in data or 'email' in str(data)[:500])
+          except Exception as e:
+            print('parse_err', e)
+          PY
+          test "$login" = "200"
