@@ -114,6 +114,7 @@ export const adminManifest = {
         'Upload pictures and PDFs here. Always add a short description so the file is easy to find later.',
       useAsTitle: 'filename',
       defaultColumns: ['filename', 'alt', 'updatedAt'],
+      listSearchableFields: ['filename', 'alt'],
       showOnDashboard: true,
       quickCreate: true,
     },
@@ -161,14 +162,16 @@ export function navGroupLabel(groupId: NavGroupId): string {
 
 export function collectionAdmin(key: AdminCollectionKey) {
   const resource = adminManifest.collections[key]
+  const searchable =
+    'listSearchableFields' in resource && resource.listSearchableFields
+      ? [...resource.listSearchableFields]
+      : undefined
   return {
     useAsTitle: resource.useAsTitle,
     defaultColumns: resource.defaultColumns ? [...resource.defaultColumns] : undefined,
     group: navGroupLabel(resource.groupId),
     description: resource.description,
-    listSearchableFields: resource.listSearchableFields
-      ? [...resource.listSearchableFields]
-      : undefined,
+    listSearchableFields: searchable,
   }
 }
 
