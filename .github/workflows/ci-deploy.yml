@@ -52,50 +52,47 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - name: Trigger Netlify build + wait
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy to Netlify (build on runner, publish)
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_FOLDER: ${{ secrets.CLOUDINARY_FOLDER }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_REGION: ${{ secrets.S3_REGION }}
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+          S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          S3_PUBLIC_URL: ${{ secrets.S3_PUBLIC_URL }}
         run: |
           set -euo pipefail
           if [ -z "${NETLIFY_AUTH_TOKEN:-}" ] || [ -z "${NETLIFY_SITE_ID:-}" ]; then
             echo "Missing NETLIFY_AUTH_TOKEN or NETLIFY_SITE_ID"
             exit 1
           fi
-
-          echo "Starting Netlify build for site $NETLIFY_SITE_ID (commit $GITHUB_SHA)"
-          resp=$(curl -sS -X POST \
-            "https://api.netlify.com/api/v1/sites/${NETLIFY_SITE_ID}/builds" \
-            -H "Authorization: Bearer ${NETLIFY_AUTH_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d '{}')
-          build_id=$(echo "$resp" | jq -r '.id // empty')
-          if [ -z "$build_id" ] || [ "$build_id" = "null" ]; then
-            echo "Failed to start Netlify build: $resp"
-            exit 1
-          fi
-          echo "Netlify build id: $build_id"
-
-          for i in $(seq 1 60); do
-            build=$(curl -sS \
-              "https://api.netlify.com/api/v1/sites/${NETLIFY_SITE_ID}/builds/${build_id}" \
-              -H "Authorization: Bearer ${NETLIFY_AUTH_TOKEN}")
-            state=$(echo "$build" | jq -r '.done // false')
-            error=$(echo "$build" | jq -r '.error // empty')
-            sha=$(echo "$build" | jq -r '.sha // empty')
-            echo "try $i done=$state error=${error:-none} sha=$sha"
-            if [ "$state" = "true" ]; then
-              if [ -n "$error" ] && [ "$error" != "null" ]; then
-                echo "Netlify build failed: $error"
-                exit 1
-              fi
-              echo "Netlify build finished"
-              exit 0
-            fi
-            sleep 10
-          done
-          echo "Timed out waiting for Netlify"
-          exit 1
+          npx netlify-cli deploy --build --prod --message "GHA ${GITHUB_SHA}"
 
   deploy-vercel:
     name: Deploy Vercel
