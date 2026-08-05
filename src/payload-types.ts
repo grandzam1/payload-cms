@@ -228,9 +228,9 @@ export interface Category {
 export interface Media {
   id: number;
   /**
-   * Say what is in the image in plain words. Required so visitors and search engines understand the file.
+   * Optional. Say what is in the image in plain words so visitors and search engines understand the file.
    */
-  alt: string;
+  alt?: string | null;
   /**
    * Cloudinary Media Information
    */

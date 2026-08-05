@@ -24,10 +24,10 @@ export const Media: CollectionConfig = {
       name: 'alt',
       type: 'text',
       label: 'Short description',
-      required: true,
+      required: false,
       admin: {
         description:
-          'Say what is in the image in plain words. Required so visitors and search engines understand the file.',
+          'Optional. Say what is in the image in plain words so visitors and search engines understand the file.',
         placeholder: 'Blue coffee mug on a wooden table',
       },
     },
