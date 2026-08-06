@@ -1,6 +1,5 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { vercelPostgresAdapter } from '@payloadcms/db-vercel-postgres'
-import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { s3Storage } from '@payloadcms/storage-s3'
 import { cloudinaryStorage } from 'payload-cloudinary'
@@ -14,39 +13,13 @@ import { collections } from './collections'
 import { SiteSettings } from './globals/SiteSettings'
 import { adminManifest } from './admin/admin.manifest'
 import { migrations } from './migrations'
+import { applyDatabaseEnv } from './lib/database-env'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-const rawDatabaseUrl =
-  process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || ''
-const usePostgres = rawDatabaseUrl.startsWith('postgres')
-
-/** Normalize Neon / Postgres URLs for node-postgres (local + Vercel). */
-function resolvePostgresUrl(url: string): string {
-  if (!url.startsWith('postgres')) return url
-  try {
-    const u = new URL(url)
-    // node-pg does not support Neon's channel_binding=require
-    u.searchParams.delete('channel_binding')
-    // Prefer direct Neon compute host — pooled host timeouts when pooler_enabled is false
-    if (u.hostname.endsWith('.neon.tech') && u.hostname.includes('-pooler')) {
-      u.hostname = u.hostname.replace('-pooler', '')
-    }
-    // pg maps sslmode=require → verify-full unless uselibpqcompat is set
-    u.searchParams.set('sslmode', 'require')
-    u.searchParams.set('uselibpqcompat', 'true')
-    // Supabase transaction pooler only
-    if (u.port === '6543' && !u.searchParams.has('pgbouncer')) {
-      u.searchParams.set('pgbouncer', 'true')
-    }
-    return u.toString()
-  } catch {
-    return url
-  }
-}
-
-const databaseUrl = usePostgres ? resolvePostgresUrl(rawDatabaseUrl) : rawDatabaseUrl
+const dbEnv = applyDatabaseEnv(path.resolve(dirname, '..'))
+const databaseUrl = dbEnv.databaseUrlUnpooled || dbEnv.databaseUrl
 
 const cloudinaryConfigured = Boolean(
   process.env.CLOUDINARY_CLOUD_NAME &&
@@ -99,45 +72,31 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  db: usePostgres
-    ? process.env.VERCEL
-      ? // Vercel → Neon: WebSocket serverless driver (TCP node-pg times out on Vercel)
-        vercelPostgresAdapter({
-          pool: {
-            connectionString: databaseUrl,
-            max: 1,
-          },
-          push: false,
-          transactionOptions: false,
-          migrationDir: path.resolve(dirname, 'migrations'),
-          prodMigrations: migrations,
-        })
-      : postgresAdapter({
-          pool: {
-            connectionString: databaseUrl,
-            max: 5,
-            connectionTimeoutMillis: 30000,
-            // Neon TLS — avoid self-signed / chain failures
-            ssl: { rejectUnauthorized: false },
-          },
-          // Schema is managed via migrations — push hangs on interactive prompts / pooler
-          push: false,
-          // PgBouncer/Supavisor: avoid long-lived transactions that hang on poolers
-          transactionOptions: false,
-          migrationDir: path.resolve(dirname, 'migrations'),
-          prodMigrations: migrations,
-        })
-    : sqliteAdapter({
-        client: {
-          url: databaseUrl || 'file:./.db',
+  db: process.env.VERCEL
+    ? // Vercel → Neon: WebSocket serverless driver (TCP node-pg times out on Vercel)
+      vercelPostgresAdapter({
+        pool: {
+          connectionString: databaseUrl,
+          max: 1,
         },
-        // Dev schema push can hang on interactive prompts under Next; use migrations instead
         push: false,
-        wal: {
-          synchronous: 'NORMAL',
-        },
-        busyTimeout: 5000,
+        transactionOptions: false,
         migrationDir: path.resolve(dirname, 'migrations'),
+        prodMigrations: migrations,
+      })
+    : postgresAdapter({
+        pool: {
+          connectionString: databaseUrl,
+          max: 5,
+          connectionTimeoutMillis: 30000,
+          ssl: dbEnv.isLocal ? false : { rejectUnauthorized: false },
+        },
+        // Schema is managed via migrations — push hangs on interactive prompts / pooler
+        push: false,
+        // PgBouncer/Supavisor: avoid long-lived transactions that hang on poolers
+        transactionOptions: false,
+        migrationDir: path.resolve(dirname, 'migrations'),
+        prodMigrations: migrations,
       }),
   sharp,
   plugins: [

@@ -12,9 +12,18 @@
  * 4. Change `brand` → title suffix, login, icon/logo text update
  *
  * After edits that add/remove collections or fields, run:
- *   pnpm payload migrate:create
- *   pnpm payload migrate
+ *   pnpm db:migrate:create
+ *   pnpm db:migrate
  *   pnpm generate:importmap && pnpm generate:types
+ *
+ * Database targets (see .env DB_TARGET):
+ *   pnpm db:use:local      → Windows Postgres on localhost:5432
+ *   pnpm db:switch:local   → switch + export/import saved snapshot
+ *   pnpm db:pull           → copy Neon content into local DB
+ *   pnpm db:export         → save active DB to data/db/latest.sql
+ *   pnpm db:import         → load data/db/latest.sql into active DB
+ *   pnpm db:seed           → copy snapshot to data/seed/dev.sql (commit in git)
+ *   pnpm db:status         → show active connection + snapshot info
  */
 
 export type NavGroupId = 'content' | 'media' | 'system'

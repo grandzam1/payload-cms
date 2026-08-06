@@ -41,11 +41,17 @@ next-env.d.ts
 .env
 .env.*
 !.env.example
+!.env.neon.example
 
 # local sqlite / databases
 *.db
 *.db-*
 .db
+
+# portable DB snapshots (working copy — use data/seed/dev.sql to commit baseline)
+/data/db/latest.sql
+/data/db/manifest.json
+/data/db/snapshots/
 
 # local tooling
 .specstory/
@@ -64,6 +70,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+!.env.neon.example
 supabase/.temp/
 
 # Local Netlify folder
