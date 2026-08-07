@@ -1,8 +1,13 @@
 import 'server-only'
 
-import { applyDatabaseEnv, maskDatabaseUrl } from './database-env'
+import {
+  applyDatabaseEnv,
+  isHostedPlatform,
+  maskDatabaseUrl,
+} from './database-env'
 
 export { isDatabaseError } from './database-error'
+export { isHostedPlatform }
 
 export type DatabaseHealth = {
   ok: boolean
@@ -12,7 +17,7 @@ export type DatabaseHealth = {
   maskedUrl: string
   latencyMs?: number
   error?: string
-  /** True when running on Vercel/Netlify — Neon is required, no local fallback. */
+  /** True on Vercel/Netlify — Neon is required, no local fallback. */
   productionPlatform: boolean
 }
 
@@ -23,7 +28,7 @@ let cache: DatabaseHealth | null = null
 let inFlight: Promise<DatabaseHealth> | null = null
 
 export function isProductionPlatform(): boolean {
-  return Boolean(process.env.VERCEL || process.env.NETLIFY)
+  return isHostedPlatform()
 }
 
 function hostFromUrl(url: string): string {
@@ -125,7 +130,7 @@ async function runProbe(): Promise<DatabaseHealth> {
     await withTimeout(
       productionPlatform || dbEnv.isNeon
         ? probeNeonServerless(url).catch(async (neonErr) => {
-            // Netlify (no VERCEL) may still reach Neon over TCP via node-pg.
+            // Prefer Neon serverless on Vercel; elsewhere allow TCP fallback.
             if (process.env.VERCEL) throw neonErr
             await probeNodePg(url, false)
           })

@@ -5,9 +5,13 @@ export async function register() {
     dns.setDefaultResultOrder('ipv4first')
 
     // Warm / log DB health on cold start (non-blocking). Failures surface via UI + /api/health/db.
-    if (process.env.VERCEL || process.env.NETLIFY) {
-      void import('./lib/database-health')
-        .then(({ getDatabaseHealth }) => getDatabaseHealth({ force: true }))
+    const [{ isHostedPlatform }, { getDatabaseHealth }] = await Promise.all([
+      import('./lib/database-env'),
+      import('./lib/database-health'),
+    ])
+
+    if (isHostedPlatform()) {
+      void getDatabaseHealth({ force: true })
         .then((health) => {
           if (health.ok) {
             console.info(

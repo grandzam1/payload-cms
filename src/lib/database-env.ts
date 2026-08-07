@@ -62,6 +62,53 @@ function isUsablePostgresUrl(url: string | undefined): url is string {
   return Boolean(url && url.startsWith('postgres') && !url.includes('SENSITIVE'))
 }
 
+/**
+ * True on Vercel/Netlify (and common Netlify Next runtime signals).
+ * Netlify's Next runtime sometimes omits `NETLIFY`, which previously
+ * made us fall through to local Postgres and clobber DATABASE_URL.
+ */
+export function isHostedPlatform(): boolean {
+  if (process.env.VERCEL || process.env.NETLIFY) return true
+
+  // Stable Netlify deploy / site signals
+  if (process.env.SITE_ID && process.env.CONTEXT) return true
+  if (process.env.SITE_NAME && process.env.DEPLOY_ID) return true
+  if (process.env.AWS_LAMBDA_FUNCTION_NAME && process.env.SITE_ID) return true
+
+  const hostedUrl =
+    process.env.URL ||
+    process.env.DEPLOY_URL ||
+    process.env.DEPLOY_PRIME_URL ||
+    process.env.NEXT_PUBLIC_URL ||
+    ''
+
+  try {
+    if (hostedUrl && /\.netlify\.app$/i.test(new URL(hostedUrl).hostname)) {
+      return true
+    }
+  } catch {
+    /* ignore */
+  }
+
+  return false
+}
+
+function readPlatformDatabaseUrls(): {
+  databaseUrl: string
+  databaseUrlUnpooled: string
+} {
+  const raw =
+    process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || ''
+  const databaseUrl = isUsablePostgresUrl(raw) ? resolvePostgresUrl(raw) : ''
+  const databaseUrlUnpooled =
+    process.env.DATABASE_URL_UNPOOLED &&
+    isUsablePostgresUrl(process.env.DATABASE_URL_UNPOOLED)
+      ? resolvePostgresUrl(process.env.DATABASE_URL_UNPOOLED)
+      : databaseUrl
+
+  return { databaseUrl, databaseUrlUnpooled }
+}
+
 /** Normalize Postgres URLs for node-postgres (local Windows host vs Neon). */
 export function resolvePostgresUrl(url: string): string {
   if (!url.startsWith('postgres')) return url
@@ -153,23 +200,16 @@ function applyToProcessEnv(databaseUrl: string, databaseUrlUnpooled: string) {
 /**
  * Single source of truth for DATABASE_URL selection.
  *
- * - VERCEL / NETLIFY → platform DATABASE_URL only (production Neon, no local fallback)
+ * - Hosted (Vercel / Netlify) → platform DATABASE_URL only (production Neon, no local fallback)
  * - DB_TARGET=local  → LOCAL_DATABASE_URL (dev Postgres)
  * - DB_TARGET=neon   → NEON_* or .env.neon (remote Neon for local testing)
  */
 export function applyDatabaseEnv(cwd = process.cwd()): DatabaseEnvConfig {
   loadEnvFiles(cwd)
 
-  // Hosted platforms (Vercel / Netlify): Neon via platform env only — never local fallback.
-  if (process.env.VERCEL || process.env.NETLIFY) {
-    const raw =
-      process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || ''
-    const databaseUrl = isUsablePostgresUrl(raw) ? resolvePostgresUrl(raw) : ''
-    const databaseUrlUnpooled =
-      process.env.DATABASE_URL_UNPOOLED &&
-      isUsablePostgresUrl(process.env.DATABASE_URL_UNPOOLED)
-        ? resolvePostgresUrl(process.env.DATABASE_URL_UNPOOLED)
-        : databaseUrl
+  // Hosted platforms: Neon via platform env only — never local fallback.
+  if (isHostedPlatform()) {
+    const { databaseUrl, databaseUrlUnpooled } = readPlatformDatabaseUrls()
 
     if (databaseUrl) {
       applyToProcessEnv(databaseUrl, databaseUrlUnpooled)

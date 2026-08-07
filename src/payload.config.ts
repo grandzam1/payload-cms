@@ -13,13 +13,15 @@ import { collections } from './collections'
 import { SiteSettings } from './globals/SiteSettings'
 import { adminManifest } from './admin/admin.manifest'
 import { migrations } from './migrations'
-import { applyDatabaseEnv } from './lib/database-env'
+import { applyDatabaseEnv, isHostedPlatform } from './lib/database-env'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 const dbEnv = applyDatabaseEnv(path.resolve(dirname, '..'))
 const databaseUrl = dbEnv.databaseUrlUnpooled || dbEnv.databaseUrl
+const hosted = isHostedPlatform()
+const useVercelPostgres = Boolean(process.env.VERCEL) || dbEnv.isNeon
 
 const cloudinaryConfigured = Boolean(
   process.env.CLOUDINARY_CLOUD_NAME &&
@@ -72,8 +74,8 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  db: process.env.VERCEL
-    ? // Vercel → Neon: WebSocket serverless driver (TCP node-pg times out on Vercel)
+  db: useVercelPostgres
+    ? // Vercel / Neon serverless: WebSocket driver (TCP node-pg times out on Vercel)
       vercelPostgresAdapter({
         pool: {
           connectionString: databaseUrl,
@@ -84,11 +86,11 @@ export default buildConfig({
         migrationDir: path.resolve(dirname, 'migrations'),
         prodMigrations: migrations,
       })
-    : // Local + Netlify: node-pg. Production Netlify still uses Neon via DATABASE_URL (no local fallback).
+    : // Local + non-Neon hosts: node-pg. Hosted Netlify with Neon uses the branch above.
       postgresAdapter({
         pool: {
           connectionString: databaseUrl,
-          max: process.env.NETLIFY ? 1 : 5,
+          max: hosted ? 1 : 5,
           connectionTimeoutMillis: 30000,
           ssl: dbEnv.isLocal ? false : { rejectUnauthorized: false },
         },

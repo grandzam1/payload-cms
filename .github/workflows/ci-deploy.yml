@@ -92,6 +92,34 @@ jobs:
             echo "Missing NETLIFY_AUTH_TOKEN or NETLIFY_SITE_ID"
             exit 1
           fi
+
+          # Runtime serverless needs these on the Netlify site (build-shell env alone is not enough).
+          sync_env() {
+            local key="$1"
+            local value="${!key:-}"
+            if [ -z "$value" ]; then
+              echo "skip Netlify env sync: $key (empty)"
+              return 0
+            fi
+            # --force updates existing values; value is passed as arg (not echoed by us).
+            npx netlify-cli env:set "$key" "$value" --context production --force >/dev/null
+            echo "synced Netlify env: $key"
+          }
+
+          sync_env DATABASE_URL
+          sync_env DATABASE_URL_UNPOOLED
+          sync_env PAYLOAD_SECRET
+          sync_env CLOUDINARY_CLOUD_NAME
+          sync_env CLOUDINARY_API_KEY
+          sync_env CLOUDINARY_API_SECRET
+          sync_env CLOUDINARY_FOLDER
+          sync_env S3_BUCKET
+          sync_env S3_REGION
+          sync_env S3_ENDPOINT
+          sync_env S3_ACCESS_KEY_ID
+          sync_env S3_SECRET_ACCESS_KEY
+          sync_env S3_PUBLIC_URL
+
           npx netlify-cli deploy --build --prod --message "GHA ${GITHUB_SHA}"
 
   deploy-vercel:
