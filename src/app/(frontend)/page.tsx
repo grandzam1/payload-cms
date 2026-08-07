@@ -4,10 +4,30 @@ import { getPayload } from 'payload'
 import React from 'react'
 import { fileURLToPath } from 'url'
 
+import { DatabaseUnavailable } from '@/components/DatabaseUnavailable'
+import { getDatabaseHealth } from '@/lib/database-health'
 import config from '@/payload.config'
 import './styles.css'
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const params = searchParams ? await searchParams : {}
+  const force = params['db-check'] === '1'
+  const health = await getDatabaseHealth({ force })
+
+  if (!health.ok) {
+    return (
+      <DatabaseUnavailable
+        detail={health.error}
+        host={health.host}
+        productionPlatform={health.productionPlatform}
+      />
+    )
+  }
+
   const headers = await getHeaders()
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })

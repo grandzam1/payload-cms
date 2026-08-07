@@ -84,10 +84,11 @@ export default buildConfig({
         migrationDir: path.resolve(dirname, 'migrations'),
         prodMigrations: migrations,
       })
-    : postgresAdapter({
+    : // Local + Netlify: node-pg. Production Netlify still uses Neon via DATABASE_URL (no local fallback).
+      postgresAdapter({
         pool: {
           connectionString: databaseUrl,
-          max: 5,
+          max: process.env.NETLIFY ? 1 : 5,
           connectionTimeoutMillis: 30000,
           ssl: dbEnv.isLocal ? false : { rejectUnauthorized: false },
         },

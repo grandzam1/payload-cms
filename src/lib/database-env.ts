@@ -153,32 +153,37 @@ function applyToProcessEnv(databaseUrl: string, databaseUrlUnpooled: string) {
 /**
  * Single source of truth for DATABASE_URL selection.
  *
- * - DB_TARGET=local  → LOCAL_DATABASE_URL (Windows Postgres via localhost:5432)
- * - DB_TARGET=neon   → NEON_* or .env.neon (remote Neon for dev/testing)
- * - VERCEL set       → use platform DATABASE_URL (production Neon)
+ * - VERCEL / NETLIFY → platform DATABASE_URL only (production Neon, no local fallback)
+ * - DB_TARGET=local  → LOCAL_DATABASE_URL (dev Postgres)
+ * - DB_TARGET=neon   → NEON_* or .env.neon (remote Neon for local testing)
  */
 export function applyDatabaseEnv(cwd = process.cwd()): DatabaseEnvConfig {
   loadEnvFiles(cwd)
 
-  if (process.env.VERCEL) {
+  // Hosted platforms (Vercel / Netlify): Neon via platform env only — never local fallback.
+  if (process.env.VERCEL || process.env.NETLIFY) {
     const raw =
       process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || ''
-    const databaseUrl = resolvePostgresUrl(raw)
-    const databaseUrlUnpooled = process.env.DATABASE_URL_UNPOOLED
-      ? resolvePostgresUrl(process.env.DATABASE_URL_UNPOOLED)
-      : databaseUrl
+    const databaseUrl = isUsablePostgresUrl(raw) ? resolvePostgresUrl(raw) : ''
+    const databaseUrlUnpooled =
+      process.env.DATABASE_URL_UNPOOLED &&
+      isUsablePostgresUrl(process.env.DATABASE_URL_UNPOOLED)
+        ? resolvePostgresUrl(process.env.DATABASE_URL_UNPOOLED)
+        : databaseUrl
 
-    applyToProcessEnv(databaseUrl, databaseUrlUnpooled)
+    if (databaseUrl) {
+      applyToProcessEnv(databaseUrl, databaseUrlUnpooled)
+    }
 
     let isNeon = false
     try {
-      isNeon = isNeonHost(new URL(databaseUrl).hostname)
+      isNeon = databaseUrl ? isNeonHost(new URL(databaseUrl).hostname) : false
     } catch {
       /* ignore */
     }
 
     return {
-      target: 'vercel',
+      target: process.env.VERCEL ? 'vercel' : 'neon',
       databaseUrl,
       databaseUrlUnpooled,
       usePostgres: databaseUrl.startsWith('postgres'),

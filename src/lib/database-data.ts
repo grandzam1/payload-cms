@@ -43,10 +43,10 @@ function cliConnectionString(config: DatabaseEnvConfig) {
   return url.toString()
 }
 
-function pgToolEnv(config: DatabaseEnvConfig) {
+function pgToolEnv(config: DatabaseEnvConfig): NodeJS.ProcessEnv {
   const url = new URL(cliConnectionString(config))
   const env: NodeJS.ProcessEnv = {
-    PATH: process.env.PATH,
+    ...process.env,
     PGHOST: url.hostname,
     PGPORT: url.port || '5432',
     PGUSER: decodeURIComponent(url.username),
@@ -181,7 +181,10 @@ function runPgTool(
   baseArgs.push(conn)
 
   if (tool.endsWith('.exe')) {
-    return runOrThrow(tool, baseArgs, { PATH: process.env.PATH })
+    return runOrThrow(tool, baseArgs, {
+      ...process.env,
+      PATH: process.env.PATH,
+    })
   }
 
   const pgArgs = [...args]
