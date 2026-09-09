@@ -1,0 +1,22 @@
+.preview-controls-hint {
+  display: inline-flex;
+  align-items: center;
+  max-width: 14rem;
+  margin-right: calc(var(--base) * 0.5);
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px dashed var(--theme-elevation-300);
+  background: var(--theme-elevation-50);
+  color: var(--theme-elevation-800);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+@media (max-width: 768px) {
+  .preview-controls-hint {
+    max-width: 100%;
+    margin: 0 0 calc(var(--base) * 0.5);
+    font-size: 0.85rem;
+  }
+}

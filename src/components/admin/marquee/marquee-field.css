@@ -1,0 +1,54 @@
+.marquee-field {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  /* Avoid Payload group-field absolute label / gutter overlap */
+  overflow: visible;
+}
+
+.marquee-field > .field-label,
+.marquee-field .field-label {
+  display: none !important;
+}
+
+.marquee-field__studio {
+  position: relative;
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+  isolation: isolate;
+}
+
+.marquee-field__preview {
+  position: relative;
+  z-index: 0;
+  padding: 1rem 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--theme-elevation-150, rgba(0, 0, 0, 0.08));
+  border-radius: 1rem;
+  background: var(--theme-elevation-50, #fff);
+}
+
+.marquee-field__preview .mq-strip {
+  --mq-fade: var(--theme-elevation-50, #ffffff);
+}
+
+.marquee-field__studio .mq-panel {
+  position: relative;
+  z-index: 0;
+}
+
+html[data-theme='dark'] .marquee-field__preview {
+  border-color: var(--theme-elevation-150, rgba(255, 255, 255, 0.12));
+  background: var(--theme-elevation-50, #1a1a1a);
+}
+
+html[data-theme='dark'] .marquee-field__preview .mq-strip {
+  --mq-fade: var(--theme-elevation-50, #1a1a1a);
+}
+
+html[data-theme='dark'] .marquee-field__preview .mq-logo-mark {
+  filter: invert(1);
+}

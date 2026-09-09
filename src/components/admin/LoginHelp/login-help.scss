@@ -14,10 +14,57 @@
 }
 
 .login-help__text {
-  margin: 0;
+  margin: 0 0 calc(var(--base) * 0.75);
   font-size: 0.95rem;
   line-height: 1.5;
   color: var(--theme-elevation-800);
+}
+
+.login-help__demo {
+  margin: 0;
+  padding: calc(var(--base) * 0.75);
+  border-radius: var(--style-radius-s, 6px);
+  background: var(--theme-elevation-0, #fff);
+  border: 1px dashed var(--theme-elevation-250);
+}
+
+.login-help__demo-label {
+  margin: 0 0 calc(var(--base) * 0.45);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--theme-elevation-600);
+}
+
+.login-help__creds {
+  margin: 0;
+  display: grid;
+  gap: calc(var(--base) * 0.4);
+
+  div {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr;
+    gap: calc(var(--base) * 0.35);
+    align-items: baseline;
+  }
+
+  dt {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--theme-elevation-700);
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  code {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--theme-text);
+    word-break: break-all;
+  }
 }
 
 @media (max-width: 768px) {
@@ -26,10 +73,29 @@
   }
 
   .login-help__title {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
   }
 
   .login-help__text {
-    font-size: 1rem;
+    font-size: 1.05rem;
+  }
+
+  .login-help__demo-label {
+    font-size: 0.9rem;
+  }
+
+  .login-help__creds {
+    div {
+      grid-template-columns: 1fr;
+      gap: 0.15rem;
+    }
+
+    dt {
+      font-size: 0.9rem;
+    }
+
+    code {
+      font-size: 1.05rem;
+    }
   }
 }

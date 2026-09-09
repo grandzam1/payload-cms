@@ -14,6 +14,7 @@ import { SiteSettings } from './globals/SiteSettings'
 import { adminManifest } from './admin/admin.manifest'
 import { migrations } from './migrations'
 import { applyDatabaseEnv, isHostedPlatform } from './lib/database-env'
+import { getPreviewPath, getServerSideURL } from './lib/getURL'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -22,6 +23,21 @@ const dbEnv = applyDatabaseEnv(path.resolve(dirname, '..'))
 const databaseUrl = dbEnv.databaseUrlUnpooled || dbEnv.databaseUrl
 const hosted = isHostedPlatform()
 const useVercelPostgres = Boolean(process.env.VERCEL) || dbEnv.isNeon
+const serverURL = getServerSideURL()
+
+/** Local HTML labs / alternate localhost hosts (open access only matters on local DB). */
+const localCors = dbEnv.isLocal
+  ? [
+      'http://127.0.0.1:3000',
+      'http://localhost:3000',
+      'http://127.0.0.1:8765',
+      'http://localhost:8765',
+      'http://127.0.0.1:5174',
+      'http://localhost:5174',
+    ]
+  : []
+
+const corsOrigins = Array.from(new Set([serverURL, ...localCors].filter(Boolean)))
 
 const cloudinaryConfigured = Boolean(
   process.env.CLOUDINARY_CLOUD_NAME &&
@@ -44,6 +60,12 @@ const s3PublicBase =
     : '')
 
 export default buildConfig({
+  serverURL,
+  cors: corsOrigins,
+  csrf: corsOrigins,
+  folders: {
+    browseByFolder: true,
+  },
   admin: {
     user: adminManifest.collections.users.slug,
     importMap: {
@@ -60,10 +82,37 @@ export default buildConfig({
     },
     // Nav, dashboard, and login chrome come from payload-theme (below).
     // Keep graphics as a lightweight brand mark for tabs / fallbacks.
+    // LoginHelp shows + autofills the intentional demo credentials.
     components: {
+      beforeLogin: ['/components/admin/LoginHelp'],
       graphics: {
         Icon: '/components/admin/graphics/Icon',
         Logo: '/components/admin/graphics/Logo',
+      },
+    },
+    livePreview: {
+      breakpoints: [
+        { label: 'Mobile', name: 'mobile', width: 375, height: 667 },
+        { label: 'Tablet', name: 'tablet', width: 768, height: 1024 },
+        { label: 'Desktop', name: 'desktop', width: 1440, height: 900 },
+      ],
+      collections: ['pages', 'posts'],
+      url: ({ data, collectionConfig }) => {
+        const slug = typeof data?.slug === 'string' ? data.slug.trim() : ''
+        if (!slug) return null
+
+        const collection =
+          collectionConfig?.slug === 'posts' ? 'posts' : 'pages'
+        const path = getPreviewPath({ collection, slug })
+        if (!path) return null
+
+        const params = new URLSearchParams({
+          path,
+          collection,
+          slug,
+          previewSecret: process.env.PREVIEW_SECRET || '',
+        })
+        return `${serverURL}/next/preview?${params.toString()}`
       },
     },
   },
@@ -110,7 +159,7 @@ export default buildConfig({
       font: 'geist',
       login: {
         heading: adminManifest.brand.name,
-        tagline: adminManifest.brand.loginHelp,
+        tagline: `Demo: ${adminManifest.brand.demoLogin.email} / ${adminManifest.brand.demoLogin.password}`,
       },
       nav: {
         icons: {

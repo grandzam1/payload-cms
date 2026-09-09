@@ -73,11 +73,16 @@ export interface Config {
     media: Media;
     users: User;
     'payload-kv': PayloadKv;
+    'payload-folders': FolderInterface;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    'payload-folders': {
+      documentsAndFolders: 'payload-folders' | 'media';
+    };
+  };
   collectionsSelect: {
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
@@ -85,6 +90,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
+    'payload-folders': PayloadFoldersSelect<false> | PayloadFoldersSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -128,18 +134,24 @@ export interface UserAuthOperations {
   };
 }
 /**
- * Static site pages such as Home, About, and Contact.
+ * Static site pages such as Home, About, and Contact. Draft first, preview, then publish.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages".
  */
 export interface Page {
   id: number;
+  /**
+   * The name people see first. Keep it short and clear.
+   */
   title: string;
   /**
-   * Used in the page URL. Example: about
+   * The web address piece (example: about). Required for Live Preview. If you leave it blank, we create one from the title when you save.
    */
   slug: string;
+  /**
+   * Write your content here. Tap / for formatting shortcuts.
+   */
   content?: {
     root: {
       type: string;
@@ -156,68 +168,128 @@ export interface Page {
     [k: string]: unknown;
   } | null;
   /**
-   * Shown in browser tabs and search results.
+   * Ordered page sections rendered by the frontend.
+   */
+  blocks?:
+    | (
+        | {
+            /**
+             * Intro paragraph(s) for this callout.
+             */
+            content?: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            } | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'callout';
+          }
+        | {
+            text: string;
+            /**
+             * Optional supporting line under the heading.
+             */
+            subheading?: string | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'heading';
+          }
+        | {
+            items?:
+              | {
+                  text: string;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'bullets';
+          }
+        | {
+            /**
+             * Optional vertical space height.
+             */
+            size?: ('small' | 'medium' | 'large') | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'spacer';
+          }
+        | {
+            title: string;
+            price?: string | null;
+            description?: string | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'pricing';
+          }
+        | {
+            items?:
+              | {
+                  avatar?: (number | null) | Media;
+                  /**
+                   * Display string for the rating (e.g. ★★★★★).
+                   */
+                  stars?: string | null;
+                  quote: string;
+                  /**
+                   * Reviewer name and optional role (e.g. Maya, founder).
+                   */
+                  attribution: string;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'reviews';
+          }
+        | {
+            title: string;
+            audience: string;
+            included: string[];
+            image: number | Media;
+            imageAlt: string;
+            /**
+             * Optional. 1 or 2. Frontend defaults to 2.
+             */
+            headingLevel?: number | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'access_tier';
+          }
+      )[]
+    | null;
+  cover?: (number | null) | Media;
+  icon?: (number | null) | Media;
+  /**
+   * Logo/title image rendered as the page heading.
+   */
+  titleImage?: (number | null) | Media;
+  /**
+   * Public theme ids from the reference frontend (notion, v2).
+   */
+  theme?: ('notion' | 'v2') | null;
+  /**
+   * Optional. Shown in browser tabs and Google. Leave blank to use the Title.
    */
   metaTitle?: string | null;
+  /**
+   * Optional. Short blurb for search results. Aim for about 150 characters.
+   */
   metaDescription?: string | null;
   updatedAt: string;
   createdAt: string;
-}
-/**
- * Articles and news items published on the site.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "posts".
- */
-export interface Post {
-  id: number;
-  title: string;
-  /**
-   * Used in the post URL. Example: spring-update
-   */
-  slug: string;
-  category?: (number | null) | Category;
-  /**
-   * Short summary shown in listings.
-   */
-  excerpt?: string | null;
-  content?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  heroImage?: (number | null) | Media;
-  metaTitle?: string | null;
-  metaDescription?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Group posts by topic for clearer navigation.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "categories".
- */
-export interface Category {
-  id: number;
-  title: string;
-  /**
-   * Used in category URLs. Example: news
-   */
-  slug: string;
-  description?: string | null;
-  updatedAt: string;
-  createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * Upload pictures and PDFs here. Always add a short description so the file is easy to find later.
@@ -292,6 +364,7 @@ export interface Media {
      */
     thumbnail_url?: string | null;
   };
+  folder?: (number | null) | FolderInterface;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -303,6 +376,107 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-folders".
+ */
+export interface FolderInterface {
+  id: number;
+  name: string;
+  folder?: (number | null) | FolderInterface;
+  documentsAndFolders?: {
+    docs?: (
+      | {
+          relationTo?: 'payload-folders';
+          value: number | FolderInterface;
+        }
+      | {
+          relationTo?: 'media';
+          value: number | Media;
+        }
+    )[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  folderType?: 'media'[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Articles and news. Status shows Draft vs Published so you always know what visitors see.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts".
+ */
+export interface Post {
+  id: number;
+  /**
+   * The name people see first. Keep it short and clear.
+   */
+  title: string;
+  /**
+   * The web address piece (example: about). Required for Live Preview. If you leave it blank, we create one from the title when you save.
+   */
+  slug: string;
+  /**
+   * Optional. Helps group similar posts so visitors can find them.
+   */
+  category?: (number | null) | Category;
+  /**
+   * A short summary for lists and previews (1–2 sentences).
+   */
+  excerpt?: string | null;
+  /**
+   * Write your content here. Tap / for formatting shortcuts.
+   */
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Optional cover picture shown at the top of the post.
+   */
+  heroImage?: (number | null) | Media;
+  /**
+   * Optional. Shown in browser tabs and Google. Leave blank to use the Title.
+   */
+  metaTitle?: string | null;
+  /**
+   * Optional. Short blurb for search results. Aim for about 150 characters.
+   */
+  metaDescription?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * Group posts by topic for clearer navigation.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories".
+ */
+export interface Category {
+  id: number;
+  title: string;
+  /**
+   * Used in category URLs. Example: news
+   */
+  slug: string;
+  description?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * People who can sign in. Add someone only when they need access.
@@ -371,6 +545,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'users';
         value: number | User;
+      } | null)
+    | ({
+        relationTo: 'payload-folders';
+        value: number | FolderInterface;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -422,10 +600,89 @@ export interface PagesSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   content?: T;
+  blocks?:
+    | T
+    | {
+        callout?:
+          | T
+          | {
+              content?: T;
+              id?: T;
+              blockName?: T;
+            };
+        heading?:
+          | T
+          | {
+              text?: T;
+              subheading?: T;
+              id?: T;
+              blockName?: T;
+            };
+        bullets?:
+          | T
+          | {
+              items?:
+                | T
+                | {
+                    text?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        spacer?:
+          | T
+          | {
+              size?: T;
+              id?: T;
+              blockName?: T;
+            };
+        pricing?:
+          | T
+          | {
+              title?: T;
+              price?: T;
+              description?: T;
+              id?: T;
+              blockName?: T;
+            };
+        reviews?:
+          | T
+          | {
+              items?:
+                | T
+                | {
+                    avatar?: T;
+                    stars?: T;
+                    quote?: T;
+                    attribution?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        access_tier?:
+          | T
+          | {
+              title?: T;
+              audience?: T;
+              included?: T;
+              image?: T;
+              imageAlt?: T;
+              headingLevel?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
+  cover?: T;
+  icon?: T;
+  titleImage?: T;
+  theme?: T;
   metaTitle?: T;
   metaDescription?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -442,6 +699,7 @@ export interface PostsSelect<T extends boolean = true> {
   metaDescription?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -478,6 +736,7 @@ export interface MediaSelect<T extends boolean = true> {
         selected_page?: T;
         thumbnail_url?: T;
       };
+  folder?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -513,6 +772,18 @@ export interface UsersSelect<T extends boolean = true> {
 export interface PayloadKvSelect<T extends boolean = true> {
   key?: T;
   data?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-folders_select".
+ */
+export interface PayloadFoldersSelect<T extends boolean = true> {
+  name?: T;
+  folder?: T;
+  documentsAndFolders?: T;
+  folderType?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -558,6 +829,13 @@ export interface SiteSetting {
   tagline?: string | null;
   defaultMetaTitle?: string | null;
   defaultMetaDescription?: string | null;
+  marquee?: {
+    duration?: number | null;
+    logoSize?: number | null;
+    direction?: ('rtl' | 'ltr') | null;
+    isPlaying?: boolean | null;
+    includedCompanies?: ('neuralink' | 'grok' | 'spacex' | 'tesla' | 'boring' | 'x')[] | null;
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -570,6 +848,15 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   tagline?: T;
   defaultMetaTitle?: T;
   defaultMetaDescription?: T;
+  marquee?:
+    | T
+    | {
+        duration?: T;
+        logoSize?: T;
+        direction?: T;
+        isPlaying?: T;
+        includedCompanies?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

@@ -1,6 +1,8 @@
 import type { CollectionConfig } from 'payload'
 import { adminManifest, collectionAdmin } from '../admin/admin.manifest'
-import { anyone, authenticated } from '../access'
+import { fieldHelp } from '../admin/fieldHelp'
+import { authenticated, authenticatedOrPublished } from '../access'
+import { populateSlug } from '../hooks/populateSlug'
 
 const resource = adminManifest.collections.posts
 
@@ -12,9 +14,24 @@ export const Posts: CollectionConfig = {
   },
   admin: {
     ...collectionAdmin('posts'),
+    components: {
+      edit: {
+        beforeDocumentControls: ['/components/admin/PreviewControlsHint'],
+      },
+    },
+  },
+  versions: {
+    drafts: {
+      autosave: {
+        interval: 1000,
+      },
+    },
+  },
+  hooks: {
+    beforeValidate: [populateSlug],
   },
   access: {
-    read: anyone,
+    read: authenticatedOrPublished,
     create: authenticated,
     update: authenticated,
     delete: authenticated,
@@ -25,63 +42,92 @@ export const Posts: CollectionConfig = {
       tabs: [
         {
           label: 'Content',
+          description: fieldHelp.draftWorkflow.description,
           fields: [
+            {
+              name: 'previewGuide',
+              type: 'ui',
+              admin: {
+                components: {
+                  Field: '/components/admin/PreviewGuide',
+                },
+              },
+            },
             {
               name: 'title',
               type: 'text',
               required: true,
-              label: 'Title',
+              label: fieldHelp.title.label,
+              admin: {
+                description: fieldHelp.title.description,
+              },
             },
             {
               name: 'slug',
               type: 'text',
               required: true,
               unique: true,
-              label: 'URL slug',
+              label: fieldHelp.slug.label,
               admin: {
-                description: 'Used in the post URL. Example: spring-update',
-                placeholder: 'spring-update',
+                description: fieldHelp.slug.description,
+                placeholder: fieldHelp.slug.postPlaceholder,
               },
             },
             {
               name: 'category',
               type: 'relationship',
               relationTo: 'categories',
-              label: 'Category',
+              label: fieldHelp.category.label,
+              admin: {
+                description: fieldHelp.category.description,
+              },
             },
             {
               name: 'excerpt',
               type: 'textarea',
-              label: 'Excerpt',
+              label: fieldHelp.excerpt.label,
               admin: {
-                description: 'Short summary shown in listings.',
+                description: fieldHelp.excerpt.description,
               },
             },
             {
               name: 'content',
               type: 'richText',
-              label: 'Body',
+              label: fieldHelp.body.label,
+              admin: {
+                description: fieldHelp.body.description,
+              },
             },
             {
               name: 'heroImage',
               type: 'upload',
               relationTo: 'media',
-              label: 'Hero image',
+              label: fieldHelp.heroImage.label,
+              admin: {
+                description: fieldHelp.heroImage.description,
+              },
             },
           ],
         },
         {
           label: 'SEO',
+          description: 'Optional search-engine details. Safe to skip while drafting.',
           fields: [
             {
               name: 'metaTitle',
               type: 'text',
-              label: 'Meta title',
+              label: fieldHelp.metaTitle.label,
+              admin: {
+                description: fieldHelp.metaTitle.description,
+              },
             },
             {
               name: 'metaDescription',
               type: 'textarea',
-              label: 'Meta description',
+              label: fieldHelp.metaDescription.label,
+              admin: {
+                description: fieldHelp.metaDescription.description,
+              },
             },
           ],
         },

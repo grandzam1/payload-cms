@@ -28,7 +28,12 @@
 
 export type NavGroupId = 'content' | 'media' | 'system'
 
-export type AdminCollectionKey = 'pages' | 'posts' | 'categories' | 'media' | 'users'
+export type AdminCollectionKey =
+  | 'pages'
+  | 'posts'
+  | 'categories'
+  | 'media'
+  | 'users'
 
 export type AdminGlobalKey = 'siteSettings'
 
@@ -60,7 +65,12 @@ export const adminManifest = {
     tagline: 'Manage pages, posts, media, and settings — no coding needed.',
     loginTitle: 'Sign in to Content Studio',
     loginHelp:
-      'Enter your team email and password. After sign-in you land on a simple dashboard with clear shortcuts.',
+      'Use the demo account below — the form is pre-filled so you can click Sign in right away.',
+    /** Intentionally obvious local/demo credentials for beginners. */
+    demoLogin: {
+      email: 'admin@admin.com',
+      password: 'admin@admin.com',
+    },
   },
 
   /**
@@ -80,9 +90,10 @@ export const adminManifest = {
       singular: 'Page',
       plural: 'Pages',
       groupId: 'content' as const,
-      description: 'Static site pages such as Home, About, and Contact.',
+      description:
+        'Static site pages such as Home, About, and Contact. Draft first, preview, then publish.',
       useAsTitle: 'title',
-      defaultColumns: ['title', 'slug', 'updatedAt'],
+      defaultColumns: ['title', 'slug', '_status', 'updatedAt'],
       listSearchableFields: ['title', 'slug'],
       showOnDashboard: true,
       quickCreate: true,
@@ -93,9 +104,10 @@ export const adminManifest = {
       singular: 'Post',
       plural: 'Posts',
       groupId: 'content' as const,
-      description: 'Articles and news items published on the site.',
+      description:
+        'Articles and news. Status shows Draft vs Published so you always know what visitors see.',
       useAsTitle: 'title',
-      defaultColumns: ['title', 'category', 'updatedAt'],
+      defaultColumns: ['title', 'category', '_status', 'updatedAt'],
       listSearchableFields: ['title', 'slug'],
       showOnDashboard: true,
       quickCreate: true,
@@ -159,6 +171,14 @@ export const adminManifest = {
     eyebrow: 'Overview',
     title: 'Dashboard',
     lede: 'Jump into content, media, or settings. Everything is grouped in the sidebar.',
+    tips: [
+      'Open Pages or Posts, write a draft, then tap Live Preview before publishing.',
+      'A URL slug is required for Live Preview — leave it blank and we create one from the title when you save.',
+      'Draft stays private. Publish changes makes it live for visitors.',
+      'Upload pictures in Media and always add a short description.',
+      'On phones: use the menu button (☰) to open the sidebar, then pick Pages or Posts.',
+      'Press Ctrl+K (⌘K on Mac) to search or jump anywhere.',
+    ],
   },
 } as const
 

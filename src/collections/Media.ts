@@ -10,6 +10,7 @@ export const Media: CollectionConfig = {
     singular: resource.singular,
     plural: resource.plural,
   },
+  folders: true,
   admin: {
     ...collectionAdmin('media'),
   },

@@ -1,10 +1,13 @@
 import { headers as getHeaders } from 'next/headers.js'
+import { draftMode } from 'next/headers.js'
 import Image from 'next/image'
 import { getPayload } from 'payload'
 import React from 'react'
 import { fileURLToPath } from 'url'
 
+import { ContentView } from '@/components/ContentView'
 import { DatabaseUnavailable } from '@/components/DatabaseUnavailable'
+import { getDocumentBySlug } from '@/lib/getDocument'
 import { getDatabaseHealth } from '@/lib/database-health'
 import config from '@/payload.config'
 import './styles.css'
@@ -26,6 +29,12 @@ export default async function HomePage({
         productionPlatform={health.productionPlatform}
       />
     )
+  }
+
+  const homePage = await getDocumentBySlug('pages', 'home')
+  if (homePage) {
+    const { isEnabled } = await draftMode()
+    return <ContentView doc={homePage} showPreviewListener={isEnabled} />
   }
 
   const headers = await getHeaders()
@@ -73,6 +82,9 @@ export default async function HomePage({
         <a className="codeLink" href={fileURL}>
           <code>app/(frontend)/page.tsx</code>
         </a>
+        <p className="hint">
+          Or create a Page with slug <code>home</code> to replace this screen.
+        </p>
       </div>
     </div>
   )

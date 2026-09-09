@@ -1,0 +1,6 @@
+/* Prevents iOS Safari zoom-on-focus; apply app-wide via layout imports */
+input,
+textarea,
+select {
+  font-size: 16px;
+}

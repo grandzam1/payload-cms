@@ -1,0 +1,323 @@
+.mq-strip {
+  --mq-fade: var(--ae-card, #ffffff);
+  position: relative;
+  width: 100%;
+  min-height: calc(var(--mq-logo-size, 48px) + 8px);
+  overflow: hidden;
+  background: transparent;
+  color: inherit;
+}
+
+.mq-strip::before,
+.mq-strip::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  z-index: 2;
+  width: 5rem;
+  pointer-events: none;
+}
+
+.mq-strip::before {
+  left: 0;
+  background: linear-gradient(to right, var(--mq-fade), transparent);
+}
+
+.mq-strip::after {
+  right: 0;
+  background: linear-gradient(to left, var(--mq-fade), transparent);
+}
+
+.mq-track {
+  display: flex;
+  width: max-content;
+  animation: mq-scroll var(--mq-duration, 40s) linear infinite;
+}
+
+.mq-track.is-ltr {
+  animation-direction: reverse;
+}
+
+.mq-track.is-paused,
+.mq-strip:hover .mq-track {
+  animation-play-state: paused;
+}
+
+.mq-group {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.mq-logo {
+  display: flex;
+  width: calc(var(--mq-logo-size, 48px) * 5.333);
+  height: var(--mq-logo-size, 48px);
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1rem;
+}
+
+.mq-logo-mark {
+  display: block;
+  width: calc(var(--mq-logo-size, 48px) * 2.333);
+  height: 100%;
+  object-fit: contain;
+}
+
+.ae-app.is-dark .mq-logo-mark {
+  filter: invert(1);
+}
+
+.mq-empty {
+  margin: 0;
+  padding: 12px 8px;
+  color: var(--ae-muted, #6f6d67);
+  font-size: 13px;
+}
+
+@keyframes mq-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.mq-panel {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.5rem;
+  background: linear-gradient(145deg, rgba(36, 36, 42, 0.96), rgba(18, 18, 21, 0.94));
+  color: #fff;
+  box-shadow: 0 1.5rem 5rem rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.mq-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mq-eyebrow,
+.mq-label,
+.mq-value,
+.mq-label-row,
+.mq-range-ends {
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mq-eyebrow {
+  margin-bottom: 0.3rem;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.mq-panel-title {
+  margin: 0;
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.mq-icon-btn {
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.65rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.65);
+  font: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.mq-icon-btn:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.mq-panel-body {
+  display: grid;
+  gap: 1.15rem;
+  padding: 1.15rem 1.25rem 1.25rem;
+}
+
+.mq-section {
+  display: grid;
+  gap: 0.62rem;
+}
+
+.mq-split {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.mq-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.mq-label-row label,
+.mq-label {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.mq-label-row span {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.61rem;
+}
+
+.mq-label-row strong {
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 500;
+}
+
+.mq-value {
+  display: block;
+  margin-top: 0.28rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+}
+
+.mq-panel input[type="range"] {
+  width: 100%;
+  height: 0.25rem;
+  appearance: none;
+  border-radius: 999px;
+  outline: none;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.16));
+}
+
+.mq-panel input[type="range"]::-webkit-slider-thumb {
+  width: 0.9rem;
+  height: 0.9rem;
+  appearance: none;
+  border: 2px solid #17171a;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12);
+}
+
+.mq-panel input[type="range"]::-moz-range-thumb {
+  width: 0.7rem;
+  height: 0.7rem;
+  border: 2px solid #17171a;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12);
+}
+
+.mq-range-ends {
+  display: flex;
+  justify-content: space-between;
+  color: rgba(255, 255, 255, 0.26);
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+}
+
+.mq-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.2rem;
+  padding: 0.55rem 0.72rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.82);
+  font: inherit;
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.mq-action:hover,
+.mq-action.is-paused {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.13);
+  color: #fff;
+}
+
+.mq-chips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.42rem;
+}
+
+.mq-chip {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.52rem 0.58rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.65rem;
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(255, 255, 255, 0.42);
+  font: inherit;
+  font-size: 0.64rem;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mq-chip:hover,
+.mq-chip.is-on {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.mq-chip-mark {
+  display: grid;
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.25rem;
+  color: #09090b;
+  font-size: 0.6rem;
+  font-weight: 700;
+}
+
+.mq-chip.is-on .mq-chip-mark {
+  border-color: #fff;
+  background: #fff;
+}
+
+.mq-icon-btn:disabled,
+.mq-action:disabled,
+.mq-chip:disabled,
+.mq-panel input:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mq-track {
+    animation: none !important;
+  }
+}
