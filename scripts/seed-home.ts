@@ -76,7 +76,10 @@ type SourceBlock =
       imageAlt: string
       headingLevel?: 1 | 2
     }
-  | { id: string; type: string; [key: string]: unknown }
+  | {
+      id: string
+      type: 'image_text'
+    }
 
 type SourcePage = {
   cover?: string
